@@ -2,7 +2,7 @@
 <html lang="id" class="h-full bg-slate-50">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>@yield('title', 'Sistem UMKM Minuman') - {{ config('beverage.store.name', 'Kedai Kopi & Teh') }}</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -31,33 +31,43 @@
         }
     </script>
     <style>
+        /* Mobile Touch & Print Optimizations */
         @media print {
             .no-print { display: none !important; }
             body { background: white !important; }
         }
+        /* Hide scrollbar for Chrome, Safari and Opera */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        /* Hide scrollbar for IE, Edge and Firefox */
+        .no-scrollbar {
+            -ms-overflow-style: none;  /* IE and Edge */
+            scrollbar-width: none;  /* Firefox */
+        }
     </style>
 </head>
-<body class="h-full flex flex-col font-sans text-slate-800 antialiased">
+<body class="h-full flex flex-col font-sans text-slate-800 antialiased selection:bg-amber-200">
     <!-- Top Header Navigation -->
     <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm no-print">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between h-16">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between h-14 sm:h-16">
             <!-- Brand & Store Name -->
-            <div class="flex items-center space-x-3">
-                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-brand-700 to-amber-600 flex items-center justify-center text-white shadow-md">
-                    <span class="text-xl">🧋</span>
+            <div class="flex items-center space-x-2.5">
+                <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-tr from-brand-700 to-amber-600 flex items-center justify-center text-white shadow-md flex-shrink-0">
+                    <span class="text-lg sm:text-xl">🧋</span>
                 </div>
                 <div>
-                    <h1 class="text-lg font-bold text-slate-900 leading-tight">
+                    <h1 class="text-sm sm:text-base font-bold text-slate-900 leading-tight truncate max-w-[190px] sm:max-w-none">
                         {{ config('beverage.store.name', 'Kopi & Teh Nusantara') }}
                     </h1>
-                    <p class="text-xs text-slate-500 font-medium hidden sm:block">
+                    <p class="text-[10px] sm:text-xs text-slate-500 font-medium hidden sm:block">
                         {{ config('beverage.store.tagline', 'ERP - SCM - CRM Kedai Minuman') }}
                     </p>
                 </div>
             </div>
 
-            <!-- Navigation Links -->
-            <nav class="flex items-center space-x-1 sm:space-x-2">
+            <!-- Desktop & Tablet Navigation Links (Hidden on Mobile) -->
+            <nav class="hidden sm:flex items-center space-x-1 sm:space-x-2">
                 <a href="{{ route('seller.pos') }}"
                    class="px-3 py-2 rounded-lg text-sm font-semibold transition-all flex items-center space-x-1.5 {{ request()->routeIs('seller.pos*') ? 'bg-amber-600 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900' }}">
                     <span>🛒</span>
@@ -83,11 +93,20 @@
                 </a>
 
                 <a href="{{ route('customer.claim') }}" target="_blank"
-                   class="hidden md:inline-flex px-3 py-2 rounded-lg text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 items-center space-x-1 transition-all border border-slate-300">
+                   class="inline-flex px-3 py-2 rounded-lg text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 items-center space-x-1 transition-all border border-slate-300">
                     <span>📱</span>
                     <span>Portal Pelanggan ↗</span>
                 </a>
             </nav>
+
+            <!-- Mobile Top Right Badge / Link -->
+            <div class="sm:hidden flex items-center space-x-2">
+                <a href="{{ route('customer.claim') }}" target="_blank"
+                   class="px-2.5 py-1 rounded-lg text-[11px] font-bold bg-amber-50 text-amber-900 border border-amber-200 flex items-center space-x-1">
+                    <span>📱</span>
+                    <span>Klaim ↗</span>
+                </a>
+            </div>
         </div>
 
         <!-- Low Stock Alert Banner (Jika Ada) -->
@@ -95,19 +114,18 @@
             $lowStockAlerts = \App\Models\Material::where('is_active', true)->whereRaw('stock <= min_stock')->get();
         @endphp
         @if($lowStockAlerts->isNotEmpty())
-            <div class="bg-amber-50 border-t border-amber-200 px-4 py-2">
-                <div class="max-w-7xl mx-auto flex items-center justify-between text-xs text-amber-800">
-                    <div class="flex items-center space-x-2">
-                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-amber-200 text-amber-900 animate-pulse">
+            <div class="bg-amber-50 border-t border-amber-200 px-3 py-1.5 sm:px-4 sm:py-2">
+                <div class="max-w-7xl mx-auto flex items-center justify-between text-[11px] sm:text-xs text-amber-800">
+                    <div class="flex items-center space-x-1.5 truncate pr-2">
+                        <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-200 text-amber-900 animate-pulse flex-shrink-0">
                             ⚠️ Stok Menipis
                         </span>
-                        <span>
-                            Bahan berikut hampir habis:
-                            <strong>{{ $lowStockAlerts->pluck('name')->implode(', ') }}</strong>.
+                        <span class="truncate">
+                            <strong>{{ $lowStockAlerts->pluck('name')->implode(', ') }}</strong>
                         </span>
                     </div>
-                    <a href="{{ route('seller.scm') }}#tab-restock" class="font-bold underline hover:text-amber-950">
-                        Kulakan Sekarang →
+                    <a href="{{ route('seller.scm') }}#tab-restock" class="font-bold underline hover:text-amber-950 flex-shrink-0">
+                        Kulakan →
                     </a>
                 </div>
             </div>
@@ -115,31 +133,31 @@
     </header>
 
     <!-- Flash Notifications -->
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full mt-4 no-print">
+    <div class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 w-full mt-3 sm:mt-4 no-print">
         @if(session('success'))
-            <div class="bg-emerald-50 border border-emerald-300 text-emerald-800 px-4 py-3 rounded-xl shadow-sm flex items-center justify-between">
+            <div class="bg-emerald-50 border border-emerald-300 text-emerald-800 px-3.5 py-2.5 sm:px-4 sm:py-3 rounded-xl shadow-sm flex items-center justify-between text-xs sm:text-sm">
                 <div class="flex items-center space-x-2">
                     <span class="text-emerald-500 font-bold">✓</span>
-                    <span class="text-sm font-medium">{{ session('success') }}</span>
+                    <span class="font-medium">{{ session('success') }}</span>
                 </div>
-                <button type="button" onclick="this.parentElement.remove()" class="text-emerald-600 hover:text-emerald-900 text-sm font-bold">✕</button>
+                <button type="button" onclick="this.parentElement.remove()" class="text-emerald-600 hover:text-emerald-900 font-bold ml-2">✕</button>
             </div>
         @endif
 
         @if(session('error'))
-            <div class="bg-rose-50 border border-rose-300 text-rose-800 px-4 py-3 rounded-xl shadow-sm flex items-center justify-between">
+            <div class="bg-rose-50 border border-rose-300 text-rose-800 px-3.5 py-2.5 sm:px-4 sm:py-3 rounded-xl shadow-sm flex items-center justify-between text-xs sm:text-sm">
                 <div class="flex items-center space-x-2">
                     <span class="text-rose-500 font-bold">✕</span>
-                    <span class="text-sm font-medium">{{ session('error') }}</span>
+                    <span class="font-medium">{{ session('error') }}</span>
                 </div>
-                <button type="button" onclick="this.parentElement.remove()" class="text-rose-600 hover:text-rose-900 text-sm font-bold">✕</button>
+                <button type="button" onclick="this.parentElement.remove()" class="text-rose-600 hover:text-rose-900 font-bold ml-2">✕</button>
             </div>
         @endif
 
         @if ($errors->any())
-            <div class="bg-rose-50 border border-rose-300 text-rose-800 px-4 py-3 rounded-xl shadow-sm">
-                <p class="font-bold text-sm mb-1">Terdapat kesalahan:</p>
-                <ul class="list-disc list-inside text-xs space-y-0.5">
+            <div class="bg-rose-50 border border-rose-300 text-rose-800 px-3.5 py-2.5 sm:px-4 sm:py-3 rounded-xl shadow-sm">
+                <p class="font-bold text-xs sm:text-sm mb-1">Terdapat kesalahan:</p>
+                <ul class="list-disc list-inside text-[11px] sm:text-xs space-y-0.5">
                     @foreach ($errors->all() as $error)
                         <li>{{ $error }}</li>
                     @endforeach
@@ -148,18 +166,53 @@
         @endif
     </div>
 
-    <!-- Main Content Area -->
-    <main class="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+    <!-- Main Content Area with Bottom Padding for Mobile Nav Bar -->
+    <main class="flex-1 w-full max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6 pb-24 sm:pb-8">
         @yield('content')
     </main>
 
-    <!-- Footer -->
-    <footer class="bg-white border-t border-slate-200 py-4 mt-auto no-print text-center text-xs text-slate-500">
+    <!-- Footer (Hidden on Mobile to save space) -->
+    <footer class="bg-white border-t border-slate-200 py-4 mt-auto no-print text-center text-xs text-slate-500 hidden sm:block">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between">
             <p>© {{ date('Y') }} {{ config('beverage.store.name') }} — Template Web App MVP UMKM Minuman (Laravel 13).</p>
             <p class="mt-1 sm:mt-0 text-slate-400">Modul Terintegrasi: ERP • SCM • CRM • POS</p>
         </div>
     </footer>
+
+    <!-- ============================================================== -->
+    <!-- MOBILE FIXED BOTTOM NAVIGATION BAR (Khusus Smartphone)         -->
+    <!-- ============================================================== -->
+    <nav class="sm:hidden fixed bottom-0 inset-x-0 z-40 bg-white/95 backdrop-blur-md border-t border-slate-200 py-1 px-2 flex justify-around items-center shadow-lg no-print">
+        <a href="{{ route('seller.pos') }}"
+           class="flex flex-col items-center py-1 px-3 rounded-xl text-center transition-all {{ request()->routeIs('seller.pos*') ? 'text-amber-700 font-extrabold' : 'text-slate-500 hover:text-slate-900 font-medium' }}">
+            <span class="text-lg {{ request()->routeIs('seller.pos*') ? 'scale-110' : '' }} transition-transform">🛒</span>
+            <span class="text-[10px] mt-0.5">Kasir</span>
+        </a>
+
+        <a href="{{ route('seller.scm') }}"
+           class="flex flex-col items-center py-1 px-3 rounded-xl text-center transition-all {{ request()->routeIs('seller.scm*') ? 'text-amber-700 font-extrabold' : 'text-slate-500 hover:text-slate-900 font-medium' }}">
+            <span class="text-lg {{ request()->routeIs('seller.scm*') ? 'scale-110' : '' }} transition-transform">📦</span>
+            <span class="text-[10px] mt-0.5">SCM</span>
+        </a>
+
+        <a href="{{ route('seller.erp') }}"
+           class="flex flex-col items-center py-1 px-3 rounded-xl text-center transition-all {{ request()->routeIs('seller.erp*') ? 'text-amber-700 font-extrabold' : 'text-slate-500 hover:text-slate-900 font-medium' }}">
+            <span class="text-lg {{ request()->routeIs('seller.erp*') ? 'scale-110' : '' }} transition-transform">💰</span>
+            <span class="text-[10px] mt-0.5">ERP</span>
+        </a>
+
+        <a href="{{ route('seller.crm') }}"
+           class="flex flex-col items-center py-1 px-3 rounded-xl text-center transition-all {{ request()->routeIs('seller.crm*') ? 'text-amber-700 font-extrabold' : 'text-slate-500 hover:text-slate-900 font-medium' }}">
+            <span class="text-lg {{ request()->routeIs('seller.crm*') ? 'scale-110' : '' }} transition-transform">👥</span>
+            <span class="text-[10px] mt-0.5">CRM</span>
+        </a>
+
+        <a href="{{ route('customer.claim') }}" target="_blank"
+           class="flex flex-col items-center py-1 px-3 rounded-xl text-center transition-all text-slate-500 hover:text-slate-900 font-medium">
+            <span class="text-lg">📱</span>
+            <span class="text-[10px] mt-0.5">Klaim ↗</span>
+        </a>
+    </nav>
 
     @stack('scripts')
 </body>
