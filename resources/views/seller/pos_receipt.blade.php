@@ -3,25 +3,36 @@
 @section('title', 'Struk Transaksi - ' . $transaction->invoice_code)
 
 @section('content')
-<div class="max-w-md mx-auto">
-    <!-- Tombol Aksi di Layar Kasir -->
-    <div class="flex items-center justify-between mb-4 no-print">
-        <a href="{{ route('seller.pos') }}" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition-all flex items-center space-x-1">
+<div class="max-w-md mx-auto space-y-4">
+    <!-- Tombol Aksi di Layar Kasir (Mobile Friendly Grid) -->
+    <div class="grid grid-cols-2 sm:flex sm:items-center sm:justify-between gap-2 no-print">
+        <a href="{{ route('seller.pos') }}" class="px-3.5 py-2.5 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 rounded-xl text-xs font-bold transition-all text-center flex items-center justify-center space-x-1 shadow-sm">
             <span>← Kasir POS</span>
         </a>
-        <div class="flex space-x-2">
-            <button onclick="window.print()" class="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-bold shadow-md transition-all flex items-center space-x-1">
-                <span>🖨️ Cetak Struk</span>
-            </button>
-            <a href="{{ route('customer.claim', ['token' => $transaction->claim_token]) }}" target="_blank"
-               class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-md transition-all flex items-center space-x-1">
-                <span>📱 Uji Klaim Poin ↗</span>
-            </a>
-        </div>
+
+        @php
+            $shareText = rawurlencode(
+                "Halo! Berikut struk digital pesanan Anda di " . ($store['name'] ?? 'Kedai Minuman') . ":\n" .
+                "No. Struk: " . $transaction->invoice_code . "\n" .
+                "Total: Rp " . number_format($transaction->total_amount, 0, ',', '.') . "\n" .
+                "Klaim " . $transaction->potential_points . " Poin Stamp Anda di link berikut:\n" .
+                route('customer.claim', ['token' => $transaction->claim_token]) . "\n\n" .
+                "Terima kasih atas kunjungannya! 😊"
+            );
+        @endphp
+
+        <a href="https://wa.me/?text={{ $shareText }}" target="_blank"
+           class="px-3.5 py-2.5 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white rounded-xl text-xs font-bold shadow-md transition-all text-center flex items-center justify-center space-x-1">
+            <span>💬 Kirim ke WA</span>
+        </a>
+
+        <button onclick="window.print()" class="col-span-2 sm:col-span-1 px-3.5 py-2.5 bg-amber-600 hover:bg-amber-700 active:scale-95 text-white rounded-xl text-xs font-bold shadow-md transition-all text-center flex items-center justify-center space-x-1">
+            <span>🖨️ Cetak Struk</span>
+        </button>
     </div>
 
-    <!-- Tampilan Struk Kasir Termal (Thermal Receipt) -->
-    <div class="bg-white p-6 rounded-2xl shadow-md border border-slate-200 text-slate-800 font-mono text-xs space-y-4">
+    <!-- Tampilan Struk Kasir Termal (Thermal Receipt 58mm/80mm) -->
+    <div class="bg-white p-5 sm:p-6 rounded-2xl shadow-md border border-slate-200 text-slate-800 font-mono text-xs space-y-4">
         <!-- Header Kedai -->
         <div class="text-center pb-3 border-b border-dashed border-slate-300">
             <h2 class="text-base font-bold tracking-tight text-slate-900">{{ $store['name'] ?? 'Kedai Kopi & Teh' }}</h2>
@@ -59,7 +70,7 @@
                         <span>{{ $item->quantity }}x {{ $item->product_name }}</span>
                         <span>Rp {{ number_format($item->subtotal, 0, ',', '.') }}</span>
                     </div>
-                    <div class="text-[10px] text-slate-500 pl-4 flex flex-wrap gap-1">
+                    <div class="text-[10px] text-slate-500 pl-3 flex flex-wrap gap-1">
                         <span>• {{ $item->ice_level }}</span>
                         <span>• {{ $item->sugar_level }}</span>
                         @if($item->topping)
@@ -99,16 +110,16 @@
             </p>
 
             <!-- Box Kode Token Struk -->
-            <div class="my-3 py-2 px-4 bg-white border-2 border-dashed border-amber-400 rounded-lg inline-block">
-                <span class="text-[10px] text-slate-400 block tracking-wider font-sans">KODE KLAIM STRUK</span>
+            <div class="my-2.5 py-2 px-4 bg-white border-2 border-dashed border-amber-400 rounded-lg inline-block">
+                <span class="text-[9px] text-slate-400 block tracking-wider font-sans">KODE KLAIM STRUK</span>
                 <span class="text-xl font-black text-amber-900 tracking-widest font-mono">
                     {{ $transaction->claim_token }}
                 </span>
             </div>
 
             <p class="text-[10px] text-slate-500">
-                Kunjungi: <strong class="text-amber-800">{{ url('/customer/claim') }}</strong><br>
-                atau scan struk untuk mengumpulkan stamp & tukar 1 minuman gratis!
+                Klaim di: <strong class="text-amber-800 break-all">{{ route('customer.claim') }}</strong><br>
+                Kumpulkan stamp untuk menukar 1 minuman gratis!
             </p>
         </div>
 
