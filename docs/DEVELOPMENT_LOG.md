@@ -242,6 +242,36 @@
 
 ---
 
+### 🏷️ LOG #06: IMPLEMENTASI SISTEM AUTENTIKASI PENGELOLA (LOGIN, REGISTER, LOGOUT, & ROLE RBAC)
+* **Tanggal & Waktu**: Senin, 23 November 2026 - 10:15 WIB
+* **Tipe Perubahan**: `Feature` & `Security`
+* **Branch Git**: `feature/edit-update-features`
+* **Status**: Completed & Verified
+
+#### 1. Latar Belakang & Tujuan
+* Mengamankan seluruh portal operasional penjual (`/seller/*`) dari akses publik tanpa izin dengan mewajibkan autentikasi pengguna (*session-based login*).
+* Menyediakan pemisahan hak akses / peran (*role-based access*) antara `owner` (Pemilik Kedai) dan `cashier` (Kasir/Staff).
+
+#### 2. Rincian Perubahan Teknis
+* **Basis Data & Migrasi**:
+  - `2026_11_23_000002_add_role_to_users_table.php`: Menambahkan kolom `role` (enum/string: `owner`, `cashier`) pada tabel `users`.
+  - Seeder default: Akun demo siap pakai `owner@umkm.com` dan `kasir@umkm.com` (password: `password`).
+* **Controller & Rute**:
+  - `AuthController.php`: Menangani `showLoginForm`, `login`, `showRegisterForm`, `register`, dan `logout`.
+  - `routes/web.php`: Rute login/register di bawah `guest` middleware, dan seluruh portal `/seller/*` diamankan menggunakan `auth` middleware.
+* **Antarmuka Pengguna (UI / Blade)**:
+  - `auth/login.blade.php`: Halaman login responsif bertema kedai minuman, fitur sembunyikan/lihat kata sandi, kotak bantuan kredensial demo 1-klik, dan opsi "Ingat Saya".
+  - `auth/register.blade.php`: Halaman pendaftaran akun pengelola baru dengan pilihan peran (`owner` / `cashier`).
+  - `layouts/seller.blade.php`: Navigasi desktop dan mobile menampilkan identitas pengguna yang sedang login dan tombol keluar (*logout*).
+
+#### 3. Hasil Pengujian & Verifikasi
+* **Automated Tests**:
+  - Berkas baru: `tests/Feature/AuthenticationTest.php` (6 test case: render halaman login, login berhasil, tolak kata sandi salah, proteksi redirect tamu ke login, logout, dan registrasi).
+  - Perintah: `php artisan test`
+  - Hasil: **24 tests passed (136 assertions)** dalam 0.79 detik.
+
+---
+
 ### 📌 RENCANA PENGEMBANGAN BERIKUTNYA (*BACKLOG / ROADMAP*)
 - [ ] Integrasi Payment Gateway otomatis (Midtrans / Xendit QRIS Dinamis).
 - [ ] Export Laporan Keuangan ke format PDF & Excel (.xlsx).

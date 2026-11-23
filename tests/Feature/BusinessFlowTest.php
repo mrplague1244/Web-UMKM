@@ -16,6 +16,13 @@ class BusinessFlowTest extends TestCase
 {
     use RefreshDatabase;
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $user = \App\Models\User::factory()->create();
+        $this->actingAs($user);
+    }
+
     /**
      * Uji Alur Kasir POS: Checkout Minuman -> Resep SCM Memotong Bahan Baku -> ERP Catat Kas Masuk
      */

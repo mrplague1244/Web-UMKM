@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CrmController;
 use App\Http\Controllers\CustomerPortalController;
 use App\Http\Controllers\ErpController;
@@ -13,15 +14,26 @@ use Illuminate\Support\Facades\Route;
 |--------------------------------------------------------------------------
 */
 
-// Beranda utama: langsung arahkan ke Kasir POS
+// Beranda utama: langsung arahkan ke Kasir POS (akan dialihkan ke Login jika belum masuk)
 Route::get('/', function () {
     return redirect()->route('seller.pos');
 });
 
 // ==========================================
-// PORTAL PENJUAL (KASIR, SCM, ERP, CRM)
+// AUTENTIKASI PENGELOLA (LOGIN, REGISTER, LOGOUT)
 // ==========================================
-Route::prefix('seller')->group(function () {
+Route::middleware('guest')->group(function () {
+    Route::get('/login', [AuthController::class, 'showLoginForm'])->name('login');
+    Route::post('/login', [AuthController::class, 'login']);
+    Route::get('/register', [AuthController::class, 'showRegisterForm'])->name('register');
+    Route::post('/register', [AuthController::class, 'register']);
+});
+Route::post('/logout', [AuthController::class, 'logout'])->name('logout')->middleware('auth');
+
+// ==========================================
+// PORTAL PENJUAL (KASIR, SCM, ERP, CRM) - DILINDUNGI AUTH
+// ==========================================
+Route::prefix('seller')->middleware('auth')->group(function () {
     // 1. Kasir POS Minuman
     Route::get('/pos', [PosController::class, 'index'])->name('seller.pos');
     Route::post('/pos/checkout', [PosController::class, 'checkout'])->name('seller.pos.checkout');

@@ -18,6 +18,13 @@ class CrudOperationsTest extends TestCase
 {
     use RefreshDatabase;
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $user = \App\Models\User::factory()->create();
+        $this->actingAs($user);
+    }
+
     /**
      * Uji Hapus Bahan Baku (Material) di SCM
      */

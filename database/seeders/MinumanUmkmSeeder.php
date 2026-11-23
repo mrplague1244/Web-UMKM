@@ -11,13 +11,34 @@ use App\Models\StockMovement;
 use App\Models\Supplier;
 use App\Models\Transaction;
 use App\Models\TransactionItem;
+use App\Models\User;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 
 class MinumanUmkmSeeder extends Seeder
 {
     public function run(): void
     {
+        // 0. Akun Pengelola Kedai (Demo Users)
+        User::updateOrCreate(
+            ['email' => 'owner@umkm.com'],
+            [
+                'name' => 'Owner Kedai Nusantara',
+                'password' => Hash::make('password'),
+                'role' => 'owner',
+            ]
+        );
+
+        User::updateOrCreate(
+            ['email' => 'kasir@umkm.com'],
+            [
+                'name' => 'Kasir Toko',
+                'password' => Hash::make('password'),
+                'role' => 'cashier',
+            ]
+        );
+
         // 1. Data Supplier Bahan Minuman
         $supPackaging = Supplier::create([
             'name' => 'CV Sumber Kemasan Sejahtera',
