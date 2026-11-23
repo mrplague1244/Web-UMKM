@@ -103,6 +103,15 @@
                         Rincian →
                     </a>
                 </div>
+                <div class="flex justify-end pt-1">
+                    <form action="{{ route('seller.crm.customer.destroy', $c->id) }}" method="POST" onsubmit="return confirm('Hapus member {{ $c->name }}?')">
+                        @csrf
+                        @method('DELETE')
+                        <button type="submit" class="text-rose-500 hover:text-rose-700 text-[11px] font-bold flex items-center space-x-1">
+                            <span>🗑️ Hapus Member</span>
+                        </button>
+                    </form>
+                </div>
             </div>
         @empty
             <div class="bg-white p-6 rounded-2xl border border-slate-200 text-center text-xs text-slate-400">
@@ -194,6 +203,13 @@
                                    class="inline-flex px-2 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-[10px] font-bold transition-all">
                                     Rincian →
                                 </a>
+                                <form action="{{ route('seller.crm.customer.destroy', $c->id) }}" method="POST" onsubmit="return confirm('Hapus member {{ $c->name }}?')" class="inline-block">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" class="px-1.5 py-1 text-rose-500 hover:text-rose-700 hover:bg-rose-50 rounded-lg text-[10px] font-bold transition-all" title="Hapus Member">
+                                        🗑️
+                                    </button>
+                                </form>
                             </td>
                         </tr>
                     @empty
