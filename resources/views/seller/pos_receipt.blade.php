@@ -96,9 +96,61 @@
             </div>
             <div class="flex justify-between text-slate-600">
                 <span>Status:</span>
-                <span class="text-emerald-700 font-bold uppercase">LUNAS</span>
+                @if($transaction->payment_status === 'paid')
+                    <span class="text-emerald-700 font-bold uppercase">✅ LUNAS</span>
+                @else
+                    <span class="text-amber-600 font-bold uppercase">⏳ MENUNGGU BAYAR</span>
+                @endif
             </div>
+            @if($transaction->sumopod_fee > 0)
+                <div class="flex justify-between text-slate-500">
+                    <span>Biaya Gateway:</span>
+                    <span>Rp {{ number_format($transaction->sumopod_fee, 0, ',', '.') }}</span>
+                </div>
+            @endif
+            @if($transaction->sumopod_expires_at && $transaction->payment_status !== 'paid')
+                <div class="flex justify-between text-rose-600">
+                    <span>Link Kadaluarsa:</span>
+                    <span class="font-semibold">{{ $transaction->sumopod_expires_at->setTimezone('Asia/Jakarta')->format('H:i, d/m/Y') }}</span>
+                </div>
+            @endif
         </div>
+
+        {{-- ===== BLOK SUMOPOD: hanya tampil untuk QRIS/Transfer yang belum lunas ===== --}}
+        @if(in_array($transaction->payment_method, ['qris', 'transfer']) && $transaction->payment_status !== 'paid')
+        <div class="no-print rounded-xl border-2 border-amber-400 bg-amber-50 p-4 space-y-3 text-center">
+            <p class="text-xs font-bold text-amber-800 tracking-wide">
+                📱 PEMBAYARAN {{ strtoupper($transaction->payment_method) }} — MENUNGGU KONFIRMASI
+            </p>
+
+            @if($transaction->sumopod_payment_url)
+                {{-- QR Code dari URL Sumopod --}}
+                <div class="flex justify-center">
+                    <img src="https://api.qrserver.com/v1/create-qr-code/?size=180x180&data={{ urlencode($transaction->sumopod_payment_url) }}"
+                         alt="QR Code Pembayaran"
+                         class="w-44 h-44 rounded-lg border border-amber-200 shadow-sm">
+                </div>
+
+                <p class="text-[10px] text-slate-500">Scan QR Code atau klik link di bawah untuk membayar</p>
+
+                <a href="{{ $transaction->sumopod_payment_url }}" target="_blank"
+                   class="inline-flex items-center justify-center w-full py-2.5 px-4 bg-amber-500 hover:bg-amber-600 active:scale-95 text-white font-bold text-xs rounded-xl shadow transition-all">
+                    🔗 Buka Halaman Pembayaran Sumopod
+                </a>
+
+                {{-- Tombol Cek Status --}}
+                <button onclick="checkPaymentStatus({{ $transaction->id }})"
+                        id="btnCekStatus"
+                        class="inline-flex items-center justify-center w-full py-2 px-4 bg-white border border-amber-400 hover:bg-amber-50 text-amber-800 font-bold text-xs rounded-xl transition-all">
+                    🔄 Cek Status Pembayaran
+                </button>
+                <p id="statusCheckMsg" class="text-[10px] text-slate-400 hidden"></p>
+            @else
+                <p class="text-xs text-rose-600 font-semibold">⚠️ Link pembayaran tidak tersedia. Hubungi pengelola.</p>
+            @endif
+        </div>
+        @endif
+        {{-- ===== END BLOK SUMOPOD ===== --}}
 
         <!-- AREA KLAIM POIN LOYALITAS PELANGGAN (QR / TOKEN) -->
         <div class="text-center pt-2 pb-2 bg-amber-50/70 p-4 rounded-xl border border-amber-200">
@@ -108,6 +160,12 @@
             <p class="text-[11px] text-slate-700 font-medium">
                 Dapatkan <strong>{{ $transaction->potential_points }} Poin Stamp</strong> dari pesanan ini!
             </p>
+
+            @if($transaction->payment_status !== 'paid')
+                <p class="text-[10px] text-amber-700 font-semibold mt-1">
+                    ⚠️ Poin akan diberikan otomatis setelah pembayaran dikonfirmasi.
+                </p>
+            @endif
 
             <!-- Box Kode Token Struk -->
             <div class="my-2.5 py-2 px-4 bg-white border-2 border-dashed border-amber-400 rounded-lg inline-block">
@@ -131,3 +189,43 @@
     </div>
 </div>
 @endsection
+
+@if(in_array($transaction->payment_method, ['qris', 'transfer']) && $transaction->payment_status !== 'paid')
+@push('scripts')
+<script>
+    // Auto-poll status pembayaran Sumopod setiap 5 detik
+    let pollInterval = setInterval(() => checkPaymentStatus({{ $transaction->id }}, true), 5000);
+
+    async function checkPaymentStatus(transactionId, isAuto = false) {
+        const btn  = document.getElementById('btnCekStatus');
+        const msg  = document.getElementById('statusCheckMsg');
+        if (!isAuto && btn) btn.textContent = '🔄 Mengecek...';
+        if (msg) msg.classList.remove('hidden');
+        if (msg && !isAuto) msg.textContent = 'Menghubungi Sumopod...';
+
+        try {
+            const res  = await fetch(`/seller/pos/payment-status/{{ $transaction->id }}`);
+            const data = await res.json();
+
+            if (data.status === 'paid') {
+                clearInterval(pollInterval);
+                if (msg) msg.textContent = '✅ Pembayaran berhasil! Halaman akan diperbarui...';
+                if (msg) msg.className = 'text-[10px] text-emerald-600 font-semibold';
+                setTimeout(() => window.location.reload(), 1500);
+            } else if (data.status === 'expired' || data.status === 'cancelled') {
+                clearInterval(pollInterval);
+                if (msg) msg.textContent = '❌ Pembayaran ' + data.status + '. Buat transaksi baru.';
+                if (msg) msg.className = 'text-[10px] text-rose-600 font-semibold';
+                if (btn) btn.disabled = true;
+            } else {
+                if (msg && !isAuto) msg.textContent = 'Status: Menunggu pembayaran dari pelanggan...';
+                if (btn) btn.textContent = '🔄 Cek Status Pembayaran';
+            }
+        } catch (e) {
+            if (msg && !isAuto) msg.textContent = 'Gagal menghubungi server.';
+        }
+        if (msg) msg.classList.remove('hidden');
+    }
+</script>
+@endpush
+@endif

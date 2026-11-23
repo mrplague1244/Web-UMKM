@@ -260,4 +260,53 @@ class PosController extends Controller
 
         return view('seller.pos_receipt', compact('transaction', 'store'));
     }
+
+    /**
+     * Polling status pembayaran Sumopod (dipanggil via AJAX dari halaman struk)
+     * GET /seller/pos/payment-status/{id}
+     */
+    public function getPaymentStatus($id)
+    {
+        $transaction = Transaction::findOrFail($id);
+
+        // Jika sudah paid di DB, langsung kembalikan
+        if ($transaction->payment_status === 'paid') {
+            return response()->json(['status' => 'paid']);
+        }
+
+        // Belum paid & ada payment_id → tanya ke Sumopod
+        if ($transaction->sumopod_payment_id) {
+            /** @var SumopodService $sumopod */
+            $sumopod = app(SumopodService::class);
+            $result  = $sumopod->getPaymentStatus($transaction->sumopod_payment_id);
+
+            if ($result['success']) {
+                $status = $result['data']['status'] ?? $transaction->sumopod_status;
+                $transaction->sumopod_status = $status;
+
+                if ($status === 'paid' && $transaction->payment_status !== 'paid') {
+                    $transaction->payment_status = 'paid';
+                    $transaction->save();
+
+                    // Catat kas masuk jika belum ada
+                    if (! $transaction->cashFlow) {
+                        \App\Models\CashFlow::create([
+                            'type'             => 'in',
+                            'category'         => 'sales',
+                            'amount'           => $transaction->total_amount,
+                            'description'      => "Pembayaran QRIS/Transfer (Sumopod) - {$transaction->invoice_code}",
+                            'transaction_id'   => $transaction->id,
+                            'transaction_date' => now()->toDateString(),
+                        ]);
+                    }
+                } else {
+                    $transaction->save();
+                }
+
+                return response()->json(['status' => $status]);
+            }
+        }
+
+        return response()->json(['status' => $transaction->sumopod_status ?? 'pending']);
+    }
 }
