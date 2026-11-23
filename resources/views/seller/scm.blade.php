@@ -75,6 +75,11 @@
                         <span>Sisa: <strong class="text-slate-900 font-extrabold">{{ number_format($m->stock, 0, ',', '.') }} {{ $m->unit }}</strong></span>
                         <span>Min: {{ number_format($m->min_stock, 0, ',', '.') }} {{ $m->unit }}</span>
                         <span>HPP: Rp {{ number_format($m->cost_per_unit, 0, ',', '.') }}</span>
+                        <form action="{{ route('seller.scm.material.destroy', $m->id) }}" method="POST" onsubmit="return confirm('Hapus bahan baku {{ $m->name }}?')" class="inline">
+                            @csrf
+                            @method('DELETE')
+                            <button type="submit" class="text-rose-500 hover:text-rose-700 text-xs font-bold p-1" title="Hapus Bahan">🗑️</button>
+                        </form>
                     </div>
                 </div>
             @endforeach
@@ -97,6 +102,7 @@
                             <th class="py-3 px-4 text-right">Batas Min. Stok</th>
                             <th class="py-3 px-4 text-right">HPP / Unit</th>
                             <th class="py-3 px-4 text-center">Status</th>
+                            <th class="py-3 px-4 text-center">Aksi</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-100">
@@ -126,6 +132,15 @@
                                     @else
                                         <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800">Aman</span>
                                     @endif
+                                </td>
+                                <td class="py-3 px-4 text-center">
+                                    <form action="{{ route('seller.scm.material.destroy', $m->id) }}" method="POST" onsubmit="return confirm('Hapus bahan baku {{ $m->name }}?')" class="inline">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" class="p-1 text-rose-500 hover:text-rose-700 hover:bg-rose-50 rounded transition-all" title="Hapus Bahan Baku">
+                                            🗑️
+                                        </button>
+                                    </form>
                                 </td>
                             </tr>
                         @endforeach
@@ -221,9 +236,18 @@
                         <span class="px-2 py-0.5 rounded text-[9px] font-bold bg-amber-100 text-amber-800">
                             {{ $p->category }}
                         </span>
-                        <span class="text-xs font-bold text-slate-900">
-                            Rp {{ number_format($p->selling_price, 0, ',', '.') }}
-                        </span>
+                        <div class="flex items-center space-x-2">
+                            <span class="text-xs font-bold text-slate-900">
+                                Rp {{ number_format($p->selling_price, 0, ',', '.') }}
+                            </span>
+                            <form action="{{ route('seller.scm.product.destroy', $p->id) }}" method="POST" onsubmit="return confirm('Hapus menu {{ $p->name }}?')" class="inline">
+                                @csrf
+                                @method('DELETE')
+                                <button type="submit" class="text-rose-500 hover:text-rose-700 p-1 hover:bg-rose-50 rounded text-xs transition-all" title="Hapus Menu Minuman">
+                                    🗑️
+                                </button>
+                            </form>
+                        </div>
                     </div>
                     <div>
                         <h4 class="font-bold text-slate-900 text-sm">{{ $p->name }}</h4>
@@ -261,7 +285,16 @@
                         <span class="px-2 py-0.5 rounded text-[9px] font-bold bg-indigo-100 text-indigo-800">
                             {{ $sup->category }}
                         </span>
-                        <span class="text-[11px] text-slate-400">{{ $sup->stock_movements_count }}x Transaksi</span>
+                        <div class="flex items-center space-x-2">
+                            <span class="text-[11px] text-slate-400">{{ $sup->stock_movements_count }}x Transaksi</span>
+                            <form action="{{ route('seller.scm.supplier.destroy', $sup->id) }}" method="POST" onsubmit="return confirm('Hapus pemasok {{ $sup->name }}?')" class="inline">
+                                @csrf
+                                @method('DELETE')
+                                <button type="submit" class="text-rose-500 hover:text-rose-700 p-1 hover:bg-rose-50 rounded text-xs transition-all" title="Hapus Pemasok">
+                                    🗑️
+                                </button>
+                            </form>
+                        </div>
                     </div>
                     <div>
                         <h4 class="font-bold text-slate-900 text-sm">{{ $sup->name }}</h4>
@@ -423,8 +456,116 @@
     </div>
 </div>
 
+<!-- MODAL TAMBAH MENU MINUMAN (Mobile Bottom Sheet & Desktop) -->
+<div id="modalProduct" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-end sm:items-center justify-center p-0 sm:p-4">
+    <div class="bg-white rounded-t-3xl sm:rounded-2xl max-w-lg w-full p-5 sm:p-6 shadow-2xl border border-slate-200 space-y-3.5 max-h-[90vh] overflow-y-auto">
+        <div class="flex justify-between items-center border-b border-slate-100 pb-2.5">
+            <h3 class="text-sm font-bold text-slate-900">+ Tambah Menu Minuman & Resep Baru</h3>
+            <button onclick="closeModal('modalProduct')" class="text-slate-400 hover:text-slate-700 font-bold p-1">✕</button>
+        </div>
+        <form action="{{ route('seller.scm.product') }}" method="POST" class="space-y-3 text-xs">
+            @csrf
+            <div>
+                <label class="block font-bold text-slate-700 mb-1">Nama Minuman *</label>
+                <input type="text" name="name" required placeholder="Contoh: Es Kopi Susu Aren"
+                       class="w-full px-3 py-2 border border-slate-300 rounded-xl focus:ring-1 focus:ring-amber-500">
+            </div>
+            <div class="grid grid-cols-2 gap-2.5">
+                <div>
+                    <label class="block font-bold text-slate-700 mb-1">Kategori *</label>
+                    <select name="category" required class="w-full px-3 py-2 border border-slate-300 rounded-xl focus:ring-1 focus:ring-amber-500">
+                        @foreach($categories as $catKey => $catLabel)
+                            <option value="{{ $catKey }}">{{ $catKey }} ({{ $catLabel }})</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div>
+                    <label class="block font-bold text-slate-700 mb-1">Kode SKU (Opsional)</label>
+                    <input type="text" name="sku" placeholder="DRK-XXX"
+                           class="w-full px-3 py-2 border border-slate-300 rounded-xl focus:ring-1 focus:ring-amber-500">
+                </div>
+            </div>
+            <div class="grid grid-cols-2 gap-2.5">
+                <div>
+                    <label class="block font-bold text-slate-700 mb-1">Harga Jual (Rp) *</label>
+                    <input type="number" name="selling_price" required placeholder="Contoh: 18000"
+                           class="w-full px-3 py-2 border border-slate-300 rounded-xl focus:ring-1 focus:ring-amber-500 font-bold">
+                </div>
+                <div>
+                    <label class="block font-bold text-slate-700 mb-1">Estimasi HPP (Rp, Opsional)</label>
+                    <input type="number" name="cost_price" placeholder="Dihitung otomatis jika ada resep"
+                           class="w-full px-3 py-2 border border-slate-300 rounded-xl focus:ring-1 focus:ring-amber-500">
+                </div>
+            </div>
+            <div>
+                <label class="block font-bold text-slate-700 mb-1">Deskripsi Menu</label>
+                <input type="text" name="description" placeholder="Perpaduan espresso arabika dengan susu segar & gula aren asli"
+                       class="w-full px-3 py-2 border border-slate-300 rounded-xl focus:ring-1 focus:ring-amber-500">
+            </div>
+
+            <!-- Resep Racikan Bahan Baku -->
+            <div class="pt-2 border-t border-slate-100">
+                <div class="flex items-center justify-between mb-2">
+                    <div>
+                        <span class="font-bold text-slate-800 block text-xs">Resep Takaran Bahan per Cup:</span>
+                        <span class="text-[10px] text-slate-400">Stok bahan akan otomatis dipotong saat pesanan kasir checkout.</span>
+                    </div>
+                    <button type="button" onclick="addRecipeRow()" class="px-2 py-1 bg-amber-50 hover:bg-amber-100 text-amber-800 text-[10px] font-bold rounded-lg border border-amber-200 transition-all">
+                        + Tambah Bahan
+                    </button>
+                </div>
+                <div id="recipeRowsContainer" class="space-y-2 max-h-40 overflow-y-auto pr-1">
+                    <div class="recipe-row flex items-center space-x-2">
+                        <select name="recipes[0][material_id]" class="flex-1 px-2.5 py-1.5 border border-slate-300 rounded-lg text-xs">
+                            <option value="">-- Pilih Bahan --</option>
+                            @foreach($materials as $m)
+                                <option value="{{ $m->id }}">{{ $m->name }} ({{ $m->unit }})</option>
+                            @endforeach
+                        </select>
+                        <input type="number" step="any" name="recipes[0][quantity]" placeholder="Takaran" class="w-24 px-2.5 py-1.5 border border-slate-300 rounded-lg text-xs">
+                        <button type="button" onclick="removeRecipeRow(this)" class="text-rose-500 hover:text-rose-700 font-bold text-xs p-1">✕</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pt-2 flex space-x-2">
+                <button type="button" onclick="closeModal('modalProduct')" class="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl">Batal</button>
+                <button type="submit" class="flex-1 py-2.5 bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-xl shadow-md">Simpan Menu</button>
+            </div>
+        </form>
+    </div>
+</div>
+
 @push('scripts')
 <script>
+    let recipeRowCount = 1;
+    const materialOptions = `@foreach($materials as $m)<option value="{{ $m->id }}">{{ addslashes($m->name) }} ({{ $m->unit }})</option>@endforeach`;
+
+    function addRecipeRow() {
+        const container = document.getElementById('recipeRowsContainer');
+        const newRow = document.createElement('div');
+        newRow.className = 'recipe-row flex items-center space-x-2 mt-2';
+        newRow.innerHTML = `
+            <select name="recipes[${recipeRowCount}][material_id]" class="flex-1 px-2.5 py-1.5 border border-slate-300 rounded-lg text-xs">
+                <option value="">-- Pilih Bahan --</option>
+                ${materialOptions}
+            </select>
+            <input type="number" step="any" name="recipes[${recipeRowCount}][quantity]" placeholder="Takaran" class="w-24 px-2.5 py-1.5 border border-slate-300 rounded-lg text-xs">
+            <button type="button" onclick="removeRecipeRow(this)" class="text-rose-500 hover:text-rose-700 font-bold text-xs p-1">✕</button>
+        `;
+        container.appendChild(newRow);
+        recipeRowCount++;
+    }
+
+    function removeRecipeRow(btn) {
+        const rows = document.querySelectorAll('.recipe-row');
+        if (rows.length > 1) {
+            btn.closest('.recipe-row').remove();
+        } else {
+            const inputs = btn.closest('.recipe-row').querySelectorAll('input, select');
+            inputs.forEach(input => input.value = '');
+        }
+    }
     function switchTab(tabId) {
         document.querySelectorAll('.tab-pane').forEach(el => el.classList.add('hidden'));
         document.querySelectorAll('.tab-btn').forEach(btn => {

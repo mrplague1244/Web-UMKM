@@ -144,22 +144,69 @@
 * Menyediakan tautan publik HTTPS yang aktif 24/7 agar aplikasi web dapat diakses secara langsung (*live*) oleh tim pengembang, klien, maupun penguji (*reviewers*).
 
 #### 2. Rincian Konfigurasi Teknis
-* **Environment Variables (Railway Variables)**:
+
+- **Environment Variables (Railway Variables)**:
   - `APP_NAME="Kedai Kopi & Teh Nusantara"`
   - `APP_ENV=production`
-  - `APP_KEY=base64:+WgQT4znrckMtsy6wgbzKlBrHODy4vHobogXxvQB7y8=`
+  - `APP_KEY=[REDACTED]`
   - `APP_DEBUG=true`
   - `DB_CONNECTION=sqlite`
   - `SESSION_DRIVER=file`
   - `CACHE_STORE=file`
-* **Inisialisasi Database SQLite di Container**:
+- **Inisialisasi Database SQLite di Container**:
   - Perintah: `touch database/database.sqlite && php artisan migrate --force --seed`
-* **Networking**:
+- **Networking**:
   - Mengaktifkan *Public Networking* melalui fitur *Generate Domain* Railway (`.up.railway.app`).
 
 #### 3. Hasil Pengujian & Verifikasi
 * Web app berhasil diakses secara daring dengan respons cepat.
 * Fitur kasir POS, mutasi bahan SCM, buku kas ERP, dan portal klaim pelanggan berjalan normal di lingkungan *cloud container*.
+
+---
+
+### 🏷️ LOG #04: PENAMBAHAN LENGKAP FITUR TAMBAH DAN HAPUS DATA (CRUD) PADA SCM, ERP, DAN CRM
+* **Tanggal & Waktu**: Senin, 23 November 2026 - 09:45 WIB
+* **Tipe Perubahan**: `Feature` & `Enhancement`
+* **Branch Git**: `main`
+* **Status**: Completed & Verified
+
+#### 1. Latar Belakang & Tujuan
+* Memenuhi kebutuhan operasional UMKM dalam mengelola data dinamis secara fleksibel: memungkinkan kasir/pemilik toko menghapus atau membatalkan kesalahan input data (buku kas, transaksi kasir, bahan baku, supplier, member) serta melengkapi fitur tambah menu minuman yang sebelumnya belum memiliki form modal.
+
+#### 2. Rincian Perubahan Teknis
+* **Rute Baru (`routes/web.php`)**:
+  - `DELETE /seller/scm/material/{id}`: Hapus bahan baku & kemasan.
+  - `DELETE /seller/scm/product/{id}`: Hapus menu minuman beserta resep terkait.
+  - `DELETE /seller/scm/supplier/{id}`: Hapus pemasok.
+  - `DELETE /seller/erp/cashflow/{id}`: Hapus catatan arus kas (buku kas masuk/keluar).
+  - `DELETE /seller/erp/transaction/{id}`: Void / batalkan transaksi kasir POS, memulihkan stok bahan baku dan buku kas terkait.
+  - `DELETE /seller/crm/customer/{id}`: Hapus member/pelanggan.
+  - `POST /seller/crm/customer/{id}/points`: Sesuaikan poin loyalitas secara manual (tambah poin bonus atau penukaran reward minuman gratis).
+  - `DELETE /seller/crm/loyalty-log/{id}`: Hapus catatan mutasi poin dan rekonsiliasi saldo poin otomatis.
+* **Controller**:
+  - `ScmController.php`: Menambahkan method `destroyMaterial`, `destroyProduct`, dan `destroySupplier`.
+  - `ErpController.php`: Menambahkan method `destroyCashFlow` dan `destroyTransaction` (transaksional dengan pemulihan stok bahan & pencatatan keuangan).
+  - `CrmController.php`: Menambahkan method `destroyCustomer`, `adjustPoints`, dan `destroyLoyaltyLog`.
+* **Antarmuka Pengguna (UI / Blade)**:
+  - `seller/scm.blade.php`:
+    - Menambahkan modal interaktif `modalProduct` (+ Tambah Menu Minuman) lengkap dengan input nama, kategori, harga, HPP, deskripsi, dan baris resep dinamis (*dynamic recipe rows*).
+    - Menambahkan tombol hapus (🗑️) pada Bahan Baku (tampilan mobile dan desktop), Menu Minuman, dan Pemasok.
+  - `seller/erp.blade.php`:
+    - Menambahkan kolom dan tombol hapus pada tabel Buku Kas.
+    - Menambahkan tombol "Batalkan Transaksi / Void" pada kartu Transaksi Kasir Terakhir.
+  - `seller/crm.blade.php`:
+    - Menambahkan aksi hapus member pelanggan pada kartu mobile dan tabel desktop.
+  - `seller/crm_detail.blade.php`:
+    - Menambahkan tombol hapus member permanen.
+    - Menambahkan tombol & modal `modalAdjustPoints` (+ Tambah Poin / - Tukar Reward).
+    - Menambahkan tombol hapus riwayat mutasi poin per baris.
+
+#### 3. Hasil Pengujian & Verifikasi
+* **Automated Tests**:
+  - Berkas baru: `tests/Feature/CrudOperationsTest.php` (7 test case komprehensif).
+  - Perintah: `php artisan test`
+  - Hasil: **13 passed (78 assertions)** dalam 0.35 detik.
+  - Seluruh alur pembuatan, penghapusan, dan pemulihan stok/poin tervalidasi 100%.
 
 ---
 

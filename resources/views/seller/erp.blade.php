@@ -87,6 +87,7 @@
                             <th class="py-2.5 sm:py-3 px-3 sm:px-4">Kategori</th>
                             <th class="py-2.5 sm:py-3 px-3 sm:px-4">Keterangan</th>
                             <th class="py-2.5 sm:py-3 px-3 sm:px-4 text-right">Nominal</th>
+                            <th class="py-2.5 sm:py-3 px-3 sm:px-4 text-center">Aksi</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-100">
@@ -109,10 +110,19 @@
                                 <td class="py-2.5 sm:py-3 px-3 sm:px-4 text-right font-bold text-xs {{ $cf->type === 'in' ? 'text-emerald-700' : 'text-rose-600' }}">
                                     {{ $cf->type === 'in' ? '+' : '-' }} Rp {{ number_format($cf->amount, 0, ',', '.') }}
                                 </td>
+                                <td class="py-2.5 sm:py-3 px-3 sm:px-4 text-center">
+                                    <form action="{{ route('seller.erp.cashflow.destroy', $cf->id) }}" method="POST" onsubmit="return confirm('Hapus catatan arus kas ini?')" class="inline">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" class="p-1 text-rose-500 hover:text-rose-700 hover:bg-rose-50 rounded transition-all" title="Hapus Catatan">
+                                            🗑️
+                                        </button>
+                                    </form>
+                                </td>
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="5" class="py-8 text-center text-slate-400">Belum ada catatan arus kas.</td>
+                                <td colspan="6" class="py-8 text-center text-slate-400">Belum ada catatan arus kas.</td>
                             </tr>
                         @endforelse
                     </tbody>
@@ -141,6 +151,16 @@
                         <div class="text-[10px] text-slate-600 pt-1 border-t border-slate-200 flex justify-between">
                             <span>Laba Kotor:</span>
                             <span class="font-bold text-slate-800">Rp {{ number_format($rt->gross_profit, 0, ',', '.') }}</span>
+                        </div>
+                        <div class="pt-1.5 border-t border-slate-100 flex justify-between items-center text-[10px]">
+                            <span class="text-slate-400">Kasir: {{ $rt->cashier_name ?: 'Toko' }}</span>
+                            <form action="{{ route('seller.erp.transaction.destroy', $rt->id) }}" method="POST" onsubmit="return confirm('Batalkan transaksi {{ $rt->invoice_code }}? Stok bahan dan kas penjualan akan disesuaikan.')">
+                                @csrf
+                                @method('DELETE')
+                                <button type="submit" class="text-rose-600 hover:text-rose-800 font-bold px-2 py-0.5 bg-rose-50 hover:bg-rose-100 rounded border border-rose-200 transition-all flex items-center space-x-1">
+                                    <span>🗑️ Batalkan</span>
+                                </button>
+                            </form>
                         </div>
                     </div>
                 @empty

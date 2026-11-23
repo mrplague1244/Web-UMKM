@@ -30,18 +30,26 @@ Route::prefix('seller')->group(function () {
     // 2. SCM (Stok Bahan Baku, Resep, & Supplier)
     Route::get('/scm', [ScmController::class, 'index'])->name('seller.scm');
     Route::post('/scm/material', [ScmController::class, 'storeMaterial'])->name('seller.scm.material');
+    Route::delete('/scm/material/{id}', [ScmController::class, 'destroyMaterial'])->name('seller.scm.material.destroy');
     Route::post('/scm/restock', [ScmController::class, 'restock'])->name('seller.scm.restock');
     Route::post('/scm/product', [ScmController::class, 'storeProduct'])->name('seller.scm.product');
+    Route::delete('/scm/product/{id}', [ScmController::class, 'destroyProduct'])->name('seller.scm.product.destroy');
     Route::post('/scm/supplier', [ScmController::class, 'storeSupplier'])->name('seller.scm.supplier');
+    Route::delete('/scm/supplier/{id}', [ScmController::class, 'destroySupplier'])->name('seller.scm.supplier.destroy');
 
     // 3. ERP (Keuangan, Laba Rugi, & Arus Kas)
     Route::get('/erp', [ErpController::class, 'index'])->name('seller.erp');
     Route::post('/erp/cashflow', [ErpController::class, 'storeCashFlow'])->name('seller.erp.cashflow');
+    Route::delete('/erp/cashflow/{id}', [ErpController::class, 'destroyCashFlow'])->name('seller.erp.cashflow.destroy');
+    Route::delete('/erp/transaction/{id}', [ErpController::class, 'destroyTransaction'])->name('seller.erp.transaction.destroy');
 
     // 4. CRM (Pelanggan, Poin Loyalitas, & WhatsApp Promo)
     Route::get('/crm', [CrmController::class, 'index'])->name('seller.crm');
     Route::post('/crm/customer', [CrmController::class, 'storeCustomer'])->name('seller.crm.customer');
+    Route::delete('/crm/customer/{id}', [CrmController::class, 'destroyCustomer'])->name('seller.crm.customer.destroy');
     Route::get('/crm/{id}', [CrmController::class, 'show'])->name('seller.crm.detail');
+    Route::post('/crm/customer/{id}/points', [CrmController::class, 'adjustPoints'])->name('seller.crm.customer.points');
+    Route::delete('/crm/loyalty-log/{id}', [CrmController::class, 'destroyLoyaltyLog'])->name('seller.crm.loyalty.destroy');
 });
 
 // ==========================================

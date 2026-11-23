@@ -75,4 +75,75 @@ class CrmController extends Controller
 
         return redirect()->route('seller.crm')->with('success', "Pelanggan {$customer->name} berhasil didaftarkan!");
     }
+
+    /**
+     * Hapus Data Pelanggan
+     */
+    public function destroyCustomer($id)
+    {
+        $customer = Customer::findOrFail($id);
+        $name = $customer->name;
+        $customer->delete();
+
+        return redirect()->route('seller.crm')->with('success', "Pelanggan {$name} berhasil dihapus!");
+    }
+
+    /**
+     * Tambah / Sesuaikan Poin Loyalitas Pelanggan (Bonus atau Penukaran Reward)
+     */
+    public function adjustPoints(Request $request, $id)
+    {
+        $request->validate([
+            'points' => 'required|integer|min:1',
+            'type' => 'required|in:earn,redeem',
+            'description' => 'required|string|max:255',
+        ]);
+
+        $customer = Customer::findOrFail($id);
+        $points = (int) $request->points;
+
+        if ($request->type === 'redeem') {
+            if ($customer->total_points < $points) {
+                return back()->with('error', 'Poin pelanggan tidak mencukupi untuk penukaran ini!');
+            }
+            $customer->decrement('total_points', $points);
+            $logPoints = -$points;
+        } else {
+            $customer->increment('total_points', $points);
+            $logPoints = $points;
+        }
+
+        $customer->updateTier();
+
+        LoyaltyLog::create([
+            'customer_id' => $customer->id,
+            'points' => $logPoints,
+            'type' => $request->type,
+            'description' => $request->description,
+        ]);
+
+        return back()->with('success', "Poin pelanggan {$customer->name} berhasil disesuaikan ({$logPoints} poin)!");
+    }
+
+    /**
+     * Hapus Riwayat Mutasi Poin & Kembalikan Saldo Poin
+     */
+    public function destroyLoyaltyLog($id)
+    {
+        $log = LoyaltyLog::findOrFail($id);
+        $customer = $log->customer;
+
+        if ($customer) {
+            if ($log->type === 'earn') {
+                $customer->decrement('total_points', min($customer->total_points, $log->points));
+            } elseif ($log->type === 'redeem') {
+                $customer->increment('total_points', abs($log->points));
+            }
+            $customer->updateTier();
+        }
+
+        $log->delete();
+
+        return back()->with('success', 'Catatan mutasi poin berhasil dihapus dan saldo poin disesuaikan!');
+    }
 }

@@ -197,4 +197,42 @@ class ScmController extends Controller
 
         return redirect()->route('seller.scm')->with('success', 'Pemasok baru berhasil ditambahkan!');
     }
+
+    /**
+     * Hapus Bahan Baku & Kemasan
+     */
+    public function destroyMaterial($id)
+    {
+        $material = Material::findOrFail($id);
+        $name = $material->name;
+        $material->recipes()->delete();
+        $material->delete();
+
+        return redirect()->route('seller.scm')->with('success', "Bahan baku {$name} berhasil dihapus!");
+    }
+
+    /**
+     * Hapus Menu Minuman
+     */
+    public function destroyProduct($id)
+    {
+        $product = Product::findOrFail($id);
+        $name = $product->name;
+        $product->recipes()->delete();
+        $product->delete();
+
+        return redirect()->route('seller.scm')->with('success', "Menu minuman {$name} berhasil dihapus!");
+    }
+
+    /**
+     * Hapus Pemasok (Supplier)
+     */
+    public function destroySupplier($id)
+    {
+        $supplier = Supplier::findOrFail($id);
+        $name = $supplier->name;
+        $supplier->delete();
+
+        return redirect()->route('seller.scm')->with('success', "Pemasok {$name} berhasil dihapus!");
+    }
 }

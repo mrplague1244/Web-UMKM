@@ -3,9 +3,13 @@
 namespace App\Http\Controllers;
 
 use App\Models\CashFlow;
+use App\Models\Customer;
+use App\Models\LoyaltyLog;
+use App\Models\Product;
 use App\Models\Transaction;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 
 class ErpController extends Controller
 {
@@ -100,5 +104,63 @@ class ErpController extends Controller
 
         $message = $request->type === 'in' ? 'Pemasukan kas berhasil dicatat!' : 'Pengeluaran kas berhasil dicatat!';
         return redirect()->route('seller.erp')->with('success', $message);
+    }
+
+    /**
+     * Hapus Catatan Arus Kas
+     */
+    public function destroyCashFlow($id)
+    {
+        $cashFlow = CashFlow::findOrFail($id);
+        $cashFlow->delete();
+
+        return redirect()->route('seller.erp')->with('success', 'Catatan arus kas berhasil dihapus!');
+    }
+
+    /**
+     * Batalkan & Hapus Transaksi Kasir POS (Void)
+     * Mengembalikan stok bahan baku/produk dan membatalkan pencatatan arus kas serta poin
+     */
+    public function destroyTransaction($id)
+    {
+        return DB::transaction(function () use ($id) {
+            $transaction = Transaction::with('items')->findOrFail($id);
+            $invoice = $transaction->invoice_code;
+
+            // 1. Kembalikan stok bahan baku dari resep & kuantitas produk
+            foreach ($transaction->items as $item) {
+                $product = Product::with('recipes.material')->find($item->product_id);
+                if ($product) {
+                    $product->increment('stock', $item->quantity);
+                    if ($product->recipes->isNotEmpty()) {
+                        foreach ($product->recipes as $recipe) {
+                            if ($recipe->material) {
+                                $recipe->material->increment('stock', $recipe->quantity * $item->quantity);
+                            }
+                        }
+                    }
+                }
+            }
+
+            // 2. Kembalikan poin loyalitas pelanggan jika sudah diklaim
+            if ($transaction->claim_status === 'claimed' && $transaction->customer_id) {
+                $customer = Customer::find($transaction->customer_id);
+                if ($customer && $transaction->potential_points > 0) {
+                    $customer->decrement('total_points', min($customer->total_points, $transaction->potential_points));
+                    $customer->updateTier();
+                }
+            }
+
+            // 3. Hapus catatan buku kas terkait transaksi ini
+            CashFlow::where('transaction_id', $transaction->id)->delete();
+
+            // 4. Hapus log loyalitas terkait transaksi ini
+            LoyaltyLog::where('transaction_id', $transaction->id)->delete();
+
+            // 5. Hapus transaksi (item transaksi otomatis cascade delete)
+            $transaction->delete();
+
+            return redirect()->route('seller.erp')->with('success', "Transaksi {$invoice} berhasil dibatalkan dan stok dikembalikan!");
+        });
     }
 }

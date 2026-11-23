@@ -4,15 +4,27 @@
 
 @section('content')
 <div class="space-y-6 max-w-5xl mx-auto">
-    <!-- Tombol Kembali -->
-    <div class="flex items-center justify-between">
+    <!-- Tombol Kembali & Aksi Member -->
+    <div class="flex flex-wrap items-center justify-between gap-2">
         <a href="{{ route('seller.crm') }}" class="px-3 py-1.5 bg-white border border-slate-200 text-slate-700 text-xs font-bold rounded-xl hover:bg-slate-50 transition-all">
             ← Kembali ke Daftar Member
         </a>
-        <a href="{{ route('customer.loyalty', $customer->phone) }}" target="_blank"
-           class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-sm transition-all">
-            Buka Kartu Loyalitas Pelanggan ↗
-        </a>
+        <div class="flex items-center space-x-2">
+            <button onclick="openModal('modalAdjustPoints')" class="px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold rounded-xl shadow-sm transition-all flex items-center space-x-1">
+                <span>⭐ Sesuaikan Poin / Hadiah</span>
+            </button>
+            <a href="{{ route('customer.loyalty', $customer->phone) }}" target="_blank"
+               class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-sm transition-all">
+                Kartu Loyalitas ↗
+            </a>
+            <form action="{{ route('seller.crm.customer.destroy', $customer->id) }}" method="POST" onsubmit="return confirm('Yakin ingin menghapus member {{ $customer->name }} secara permanen?')" class="inline">
+                @csrf
+                @method('DELETE')
+                <button type="submit" class="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-bold rounded-xl transition-all">
+                    🗑️ Hapus Member
+                </button>
+            </form>
+        </div>
     </div>
 
     <!-- KARTU PROFIL MEMBER -->
@@ -80,9 +92,16 @@
                             <span class="font-bold text-slate-800 block">{{ $log->description }}</span>
                             <span class="text-[10px] text-slate-400">{{ $log->created_at->format('d M Y H:i') }}</span>
                         </div>
-                        <span class="font-black px-2 py-1 rounded-lg text-xs {{ $log->points > 0 ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800' }}">
-                            {{ $log->points > 0 ? '+' : '' }}{{ $log->points }} Poin
-                        </span>
+                        <div class="flex items-center space-x-2">
+                            <span class="font-black px-2 py-1 rounded-lg text-xs {{ $log->points > 0 ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800' }}">
+                                {{ $log->points > 0 ? '+' : '' }}{{ $log->points }} Poin
+                            </span>
+                            <form action="{{ route('seller.crm.loyalty.destroy', $log->id) }}" method="POST" onsubmit="return confirm('Hapus riwayat poin ini? Saldo poin member akan disesuaikan.')" class="inline">
+                                @csrf
+                                @method('DELETE')
+                                <button type="submit" class="p-1 text-slate-300 hover:text-rose-500 rounded text-xs" title="Hapus Riwayat Poin">✕</button>
+                            </form>
+                        </div>
                     </div>
                 @empty
                     <p class="text-xs text-slate-400 text-center py-6">Belum ada catatan mutasi poin.</p>
@@ -91,4 +110,59 @@
         </div>
     </div>
 </div>
+
+<!-- MODAL SESUAIKAN POIN (Mobile Bottom Sheet & Desktop) -->
+<div id="modalAdjustPoints" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-end sm:items-center justify-center p-0 sm:p-4">
+    <div class="bg-white rounded-t-3xl sm:rounded-2xl max-w-md w-full p-5 sm:p-6 shadow-2xl border border-slate-200 space-y-3.5 max-h-[90vh] overflow-y-auto">
+        <div class="flex justify-between items-center border-b border-slate-100 pb-2.5">
+            <h3 class="text-sm font-bold text-slate-900">⭐ Sesuaikan Poin Member</h3>
+            <button onclick="closeModal('modalAdjustPoints')" class="text-slate-400 hover:text-slate-700 font-bold p-1">✕</button>
+        </div>
+        <form action="{{ route('seller.crm.customer.points', $customer->id) }}" method="POST" class="space-y-3 text-xs">
+            @csrf
+            <div>
+                <label class="block font-bold text-slate-700 mb-1">Aksi Penyesuaian *</label>
+                <div class="grid grid-cols-2 gap-2">
+                    <label class="cursor-pointer">
+                        <input type="radio" name="type" value="earn" checked class="peer sr-only">
+                        <div class="p-2 text-center rounded-xl border border-slate-200 peer-checked:border-emerald-600 peer-checked:bg-emerald-50 peer-checked:text-emerald-800 font-bold">
+                            + Tambah Poin
+                        </div>
+                    </label>
+                    <label class="cursor-pointer">
+                        <input type="radio" name="type" value="redeem" class="peer sr-only">
+                        <div class="p-2 text-center rounded-xl border border-slate-200 peer-checked:border-amber-600 peer-checked:bg-amber-50 peer-checked:text-amber-800 font-bold">
+                            - Tukar Reward
+                        </div>
+                    </label>
+                </div>
+            </div>
+            <div>
+                <label class="block font-bold text-slate-700 mb-1">Jumlah Poin / Stamp *</label>
+                <input type="number" name="points" min="1" value="1" required placeholder="Contoh: 10"
+                       class="w-full px-3 py-2 border border-slate-300 rounded-xl focus:ring-1 focus:ring-amber-500 font-bold">
+            </div>
+            <div>
+                <label class="block font-bold text-slate-700 mb-1">Keterangan / Alasan *</label>
+                <input type="text" name="description" required placeholder="Contoh: Penukaran 1 Free Cup Kopi Susu"
+                       class="w-full px-3 py-2 border border-slate-300 rounded-xl focus:ring-1 focus:ring-amber-500">
+            </div>
+            <div class="pt-2 flex space-x-2">
+                <button type="button" onclick="closeModal('modalAdjustPoints')" class="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl">Batal</button>
+                <button type="submit" class="flex-1 py-2.5 bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-xl shadow-md">Simpan Perubahan Poin</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+@push('scripts')
+<script>
+    function openModal(id) {
+        document.getElementById(id).classList.remove('hidden');
+    }
+    function closeModal(id) {
+        document.getElementById(id).classList.add('hidden');
+    }
+</script>
+@endpush
 @endsection
