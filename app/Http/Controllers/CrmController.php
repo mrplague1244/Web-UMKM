@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Customer;
 use App\Models\LoyaltyLog;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class CrmController extends Controller
 {
@@ -74,6 +75,28 @@ class CrmController extends Controller
         ]);
 
         return redirect()->route('seller.crm')->with('success', "Pelanggan {$customer->name} berhasil didaftarkan!");
+    }
+
+    /**
+     * Perbarui Data Pelanggan / Member
+     */
+    public function updateCustomer(Request $request, $id)
+    {
+        $customer = Customer::findOrFail($id);
+
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'phone' => ['required', 'string', Rule::unique('customers', 'phone')->ignore($customer->id)],
+            'email' => 'nullable|email',
+        ]);
+
+        $customer->update([
+            'name' => $request->name,
+            'phone' => $request->phone,
+            'email' => $request->email,
+        ]);
+
+        return back()->with('success', "Data member {$customer->name} berhasil diperbarui!");
     }
 
     /**

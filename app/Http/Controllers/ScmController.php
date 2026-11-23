@@ -193,9 +193,19 @@ class ScmController extends Controller
             'notes' => 'nullable|string',
         ]);
 
-        Supplier::create($request->all());
+        Supplier::updateOrCreate(
+            ['id' => $request->id],
+            [
+                'name' => $request->name,
+                'phone' => $request->phone,
+                'category' => $request->category ?: 'Bahan Minuman',
+                'address' => $request->address,
+                'notes' => $request->notes,
+            ]
+        );
 
-        return redirect()->route('seller.scm')->with('success', 'Pemasok baru berhasil ditambahkan!');
+        $msg = $request->id ? 'Data pemasok berhasil diperbarui!' : 'Pemasok baru berhasil ditambahkan!';
+        return redirect()->route('seller.scm')->with('success', $msg);
     }
 
     /**

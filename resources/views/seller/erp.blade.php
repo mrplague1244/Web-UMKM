@@ -110,7 +110,10 @@
                                 <td class="py-2.5 sm:py-3 px-3 sm:px-4 text-right font-bold text-xs {{ $cf->type === 'in' ? 'text-emerald-700' : 'text-rose-600' }}">
                                     {{ $cf->type === 'in' ? '+' : '-' }} Rp {{ number_format($cf->amount, 0, ',', '.') }}
                                 </td>
-                                <td class="py-2.5 sm:py-3 px-3 sm:px-4 text-center">
+                                <td class="py-2.5 sm:py-3 px-3 sm:px-4 text-center space-x-1">
+                                    <button type="button" onclick="openEditCashFlowModal({{ json_encode($cf) }})" class="p-1 text-amber-600 hover:text-amber-800 hover:bg-amber-50 rounded transition-all" title="Edit Catatan Arus Kas">
+                                        ✏️
+                                    </button>
                                     <form action="{{ route('seller.erp.cashflow.destroy', $cf->id) }}" method="POST" onsubmit="return confirm('Hapus catatan arus kas ini?')" class="inline">
                                         @csrf
                                         @method('DELETE')
@@ -235,6 +238,73 @@
     </div>
 </div>
 
+<!-- MODAL EDIT ARUS KAS (Mobile Bottom Sheet & Desktop) -->
+<div id="modalEditCashFlow" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-end sm:items-center justify-center p-0 sm:p-4">
+    <div class="bg-white rounded-t-3xl sm:rounded-2xl max-w-md w-full p-5 sm:p-6 shadow-2xl border border-slate-200 space-y-3.5 max-h-[90vh] overflow-y-auto">
+        <div class="flex justify-between items-center border-b border-slate-100 pb-2.5">
+            <h3 class="text-sm font-bold text-slate-900">✏️ Edit Catatan Arus Kas</h3>
+            <button onclick="closeModal('modalEditCashFlow')" class="text-slate-400 hover:text-slate-700 font-bold p-1">✕</button>
+        </div>
+        <form id="formEditCashFlow" action="" method="POST" class="space-y-3 text-xs">
+            @csrf
+            @method('PUT')
+            <div>
+                <label class="block font-bold text-slate-700 mb-1">Jenis Arus Kas *</label>
+                <div class="grid grid-cols-2 gap-2">
+                    <label class="cursor-pointer">
+                        <input type="radio" name="type" value="out" id="editCashFlowTypeOut" class="peer sr-only">
+                        <div class="p-2 text-center rounded-xl border border-slate-200 peer-checked:border-rose-600 peer-checked:bg-rose-50 peer-checked:text-rose-800 font-bold">
+                            - Kas Keluar (Beban)
+                        </div>
+                    </label>
+                    <label class="cursor-pointer">
+                        <input type="radio" name="type" value="in" id="editCashFlowTypeIn" class="peer sr-only">
+                        <div class="p-2 text-center rounded-xl border border-slate-200 peer-checked:border-emerald-600 peer-checked:bg-emerald-50 peer-checked:text-emerald-800 font-bold">
+                            + Kas Masuk
+                        </div>
+                    </label>
+                </div>
+            </div>
+
+            <div>
+                <label class="block font-bold text-slate-700 mb-1">Kategori *</label>
+                <select name="category" id="editCashFlowCategory" required class="w-full px-3 py-2 border border-slate-300 rounded-xl focus:ring-1 focus:ring-amber-500">
+                    <option value="operational">Operasional Harian (Es Batu, Galon, Plastik)</option>
+                    <option value="electricity">Listrik & Gas</option>
+                    <option value="rent">Sewa Tempat / Gerobak</option>
+                    <option value="salary">Gaji Karyawan / Uang Makan</option>
+                    <option value="restock">Kulakan / Bahan</option>
+                    <option value="sales">Penjualan</option>
+                    <option value="other">Lain-lain</option>
+                </select>
+            </div>
+
+            <div>
+                <label class="block font-bold text-slate-700 mb-1">Nominal (Rp) *</label>
+                <input type="number" name="amount" id="editCashFlowAmount" required
+                       class="w-full px-3 py-2 border border-slate-300 rounded-xl focus:ring-1 focus:ring-amber-500 font-bold">
+            </div>
+
+            <div>
+                <label class="block font-bold text-slate-700 mb-1">Keterangan *</label>
+                <input type="text" name="description" id="editCashFlowDescription" required
+                       class="w-full px-3 py-2 border border-slate-300 rounded-xl focus:ring-1 focus:ring-amber-500">
+            </div>
+
+            <div>
+                <label class="block font-bold text-slate-700 mb-1">Tanggal Transaksi *</label>
+                <input type="date" name="transaction_date" id="editCashFlowDate" required
+                       class="w-full px-3 py-2 border border-slate-300 rounded-xl focus:ring-1 focus:ring-amber-500">
+            </div>
+
+            <div class="pt-2 flex space-x-2">
+                <button type="button" onclick="closeModal('modalEditCashFlow')" class="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl">Batal</button>
+                <button type="submit" class="flex-1 py-2.5 bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-xl shadow-md">Simpan Perubahan</button>
+            </div>
+        </form>
+    </div>
+</div>
+
 @push('scripts')
 <script>
     function openModal(id) {
@@ -242,6 +312,19 @@
     }
     function closeModal(id) {
         document.getElementById(id).classList.add('hidden');
+    }
+    function openEditCashFlowModal(data) {
+        document.getElementById('formEditCashFlow').action = '/seller/erp/cashflow/' + data.id;
+        if (data.type === 'in') {
+            document.getElementById('editCashFlowTypeIn').checked = true;
+        } else {
+            document.getElementById('editCashFlowTypeOut').checked = true;
+        }
+        document.getElementById('editCashFlowCategory').value = data.category;
+        document.getElementById('editCashFlowAmount').value = data.amount;
+        document.getElementById('editCashFlowDescription').value = data.description;
+        document.getElementById('editCashFlowDate').value = data.transaction_date ? data.transaction_date.substring(0, 10) : '';
+        openModal('modalEditCashFlow');
     }
 </script>
 @endpush

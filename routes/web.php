@@ -40,12 +40,14 @@ Route::prefix('seller')->group(function () {
     // 3. ERP (Keuangan, Laba Rugi, & Arus Kas)
     Route::get('/erp', [ErpController::class, 'index'])->name('seller.erp');
     Route::post('/erp/cashflow', [ErpController::class, 'storeCashFlow'])->name('seller.erp.cashflow');
+    Route::put('/erp/cashflow/{id}', [ErpController::class, 'updateCashFlow'])->name('seller.erp.cashflow.update');
     Route::delete('/erp/cashflow/{id}', [ErpController::class, 'destroyCashFlow'])->name('seller.erp.cashflow.destroy');
     Route::delete('/erp/transaction/{id}', [ErpController::class, 'destroyTransaction'])->name('seller.erp.transaction.destroy');
 
     // 4. CRM (Pelanggan, Poin Loyalitas, & WhatsApp Promo)
     Route::get('/crm', [CrmController::class, 'index'])->name('seller.crm');
     Route::post('/crm/customer', [CrmController::class, 'storeCustomer'])->name('seller.crm.customer');
+    Route::put('/crm/customer/{id}', [CrmController::class, 'updateCustomer'])->name('seller.crm.customer.update');
     Route::delete('/crm/customer/{id}', [CrmController::class, 'destroyCustomer'])->name('seller.crm.customer.destroy');
     Route::get('/crm/{id}', [CrmController::class, 'show'])->name('seller.crm.detail');
     Route::post('/crm/customer/{id}/points', [CrmController::class, 'adjustPoints'])->name('seller.crm.customer.points');

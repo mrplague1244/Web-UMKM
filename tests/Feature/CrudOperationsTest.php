@@ -291,4 +291,184 @@ class CrudOperationsTest extends TestCase
         // Saldo pulih dari 10 kembali ke 20
         $this->assertEquals(20, $customer->fresh()->total_points);
     }
+
+    /**
+     * Uji Edit Bahan Baku di SCM
+     */
+    public function test_can_edit_material(): void
+    {
+        $material = Material::create([
+            'name' => 'Gula Pasir Kristal',
+            'category' => 'Sirup & Pemanis',
+            'unit' => 'gram',
+            'stock' => 2000,
+            'min_stock' => 200,
+            'cost_per_unit' => 15,
+        ]);
+
+        $response = $this->post(route('seller.scm.material'), [
+            'id' => $material->id,
+            'name' => 'Gula Pasir Premium',
+            'category' => 'Sirup & Pemanis',
+            'unit' => 'gram',
+            'stock' => 2500,
+            'min_stock' => 300,
+            'cost_per_unit' => 18,
+        ]);
+
+        $response->assertRedirect(route('seller.scm'));
+        $response->assertSessionHas('success');
+
+        $updated = $material->fresh();
+        $this->assertEquals('Gula Pasir Premium', $updated->name);
+        $this->assertEquals(2500, $updated->stock);
+        $this->assertEquals(300, $updated->min_stock);
+        $this->assertEquals(18, $updated->cost_per_unit);
+    }
+
+    /**
+     * Uji Edit Menu Minuman & Perubahan Komposisi Resep di SCM
+     */
+    public function test_can_edit_product_and_recipe(): void
+    {
+        $mat1 = Material::create([
+            'name' => 'Teh Melati',
+            'category' => 'Bahan Baku',
+            'unit' => 'gram',
+            'stock' => 500,
+            'min_stock' => 50,
+            'cost_per_unit' => 80,
+        ]);
+
+        $mat2 = Material::create([
+            'name' => 'Sirup Lemon',
+            'category' => 'Sirup & Pemanis',
+            'unit' => 'ml',
+            'stock' => 1000,
+            'min_stock' => 100,
+            'cost_per_unit' => 50,
+        ]);
+
+        $product = Product::create([
+            'name' => 'Lemon Tea Original',
+            'category' => 'Tea Series',
+            'selling_price' => 12000,
+            'cost_price' => 4000,
+            'stock' => 50,
+        ]);
+
+        ProductRecipe::create([
+            'product_id' => $product->id,
+            'material_id' => $mat1->id,
+            'quantity' => 10,
+        ]);
+
+        // Edit nama, harga, dan ganti resep ke 2 bahan
+        $response = $this->post(route('seller.scm.product'), [
+            'id' => $product->id,
+            'name' => 'Iced Lemon Tea Segar',
+            'category' => 'Tea Series',
+            'selling_price' => 14000,
+            'cost_price' => 4500,
+            'recipes' => [
+                ['material_id' => $mat1->id, 'quantity' => 12],
+                ['material_id' => $mat2->id, 'quantity' => 20],
+            ],
+        ]);
+
+        $response->assertRedirect(route('seller.scm'));
+        $response->assertSessionHas('success');
+
+        $updated = $product->fresh();
+        $this->assertEquals('Iced Lemon Tea Segar', $updated->name);
+        $this->assertEquals(14000, $updated->selling_price);
+        $this->assertCount(2, $updated->recipes);
+    }
+
+    /**
+     * Uji Edit Data Pemasok (Supplier) di SCM
+     */
+    public function test_can_edit_supplier(): void
+    {
+        $supplier = Supplier::create([
+            'name' => 'UD Berkah Kemasan',
+            'phone' => '081211112222',
+            'category' => 'Kemasan Cup',
+            'address' => 'Semarang Barat',
+        ]);
+
+        $response = $this->post(route('seller.scm.supplier'), [
+            'id' => $supplier->id,
+            'name' => 'PT Berkah Kemasan Makmur',
+            'phone' => '081299990000',
+            'category' => 'Packaging',
+            'address' => 'Semarang Timur',
+            'notes' => 'Supplier cup sablon 16oz dan 22oz',
+        ]);
+
+        $response->assertRedirect(route('seller.scm'));
+        $response->assertSessionHas('success');
+
+        $updated = $supplier->fresh();
+        $this->assertEquals('PT Berkah Kemasan Makmur', $updated->name);
+        $this->assertEquals('081299990000', $updated->phone);
+        $this->assertEquals('Packaging', $updated->category);
+    }
+
+    /**
+     * Uji Edit Catatan Arus Kas di ERP
+     */
+    public function test_can_edit_cash_flow(): void
+    {
+        $cashFlow = CashFlow::create([
+            'type' => 'out',
+            'category' => 'operational',
+            'amount' => 25000,
+            'description' => 'Beli kantong kresek',
+            'transaction_date' => '2026-11-20',
+        ]);
+
+        $response = $this->put(route('seller.erp.cashflow.update', $cashFlow->id), [
+            'type' => 'out',
+            'category' => 'operational',
+            'amount' => 30000,
+            'description' => 'Beli kantong kresek ukuran L (2 pack)',
+            'transaction_date' => '2026-11-21',
+        ]);
+
+        $response->assertRedirect(route('seller.erp'));
+        $response->assertSessionHas('success');
+
+        $updated = $cashFlow->fresh();
+        $this->assertEquals(30000, $updated->amount);
+        $this->assertEquals('Beli kantong kresek ukuran L (2 pack)', $updated->description);
+        $this->assertEquals('2026-11-21', $updated->transaction_date->format('Y-m-d'));
+    }
+
+    /**
+     * Uji Edit Data Member Pelanggan di CRM
+     */
+    public function test_can_edit_customer(): void
+    {
+        $customer = Customer::create([
+            'name' => 'Fajar Nugroho',
+            'phone' => '087711223344',
+            'email' => 'fajar@old.com',
+            'total_points' => 10,
+            'tier' => 'Silver',
+        ]);
+
+        $response = $this->put(route('seller.crm.customer.update', $customer->id), [
+            'name' => 'Fajar Nugroho Pratama',
+            'phone' => '087799887766',
+            'email' => 'fajar.pratama@new.com',
+        ]);
+
+        $response->assertSessionHas('success');
+
+        $updated = $customer->fresh();
+        $this->assertEquals('Fajar Nugroho Pratama', $updated->name);
+        $this->assertEquals('087799887766', $updated->phone);
+        $this->assertEquals('fajar.pratama@new.com', $updated->email);
+    }
 }
