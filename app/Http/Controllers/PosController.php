@@ -9,6 +9,7 @@ use App\Models\Product;
 use App\Models\StockMovement;
 use App\Models\Transaction;
 use App\Models\TransactionItem;
+use App\Services\SumopodService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -46,6 +47,7 @@ class PosController extends Controller
      * - ERP: Pembuatan transaksi, perhitungan HPP, laba kotor, dan pencatatan kas masuk otomatis
      * - SCM: Pengurangan stok bahan baku otomatis berdasarkan resep (BOM)
      * - CRM: Pembuatan claim_token untuk struk / QR Code pelanggan
+     * - Payment: Sumopod QRIS / Transfer (payment_status = pending, dikonfirmasi via webhook)
      */
     public function checkout(Request $request)
     {
@@ -142,57 +144,108 @@ class PosController extends Controller
             $invoiceCode = 'INV-' . date('Ymd') . '-' . strtoupper(Str::random(5));
             $claimToken = strtoupper(Str::random(6));
 
+            // ----------------------------------------------------------------
+            // Tentukan payment_status awal berdasarkan metode pembayaran:
+            // - cash     : langsung 'paid' (uang tunai diterima saat itu)
+            // - qris / transfer : 'pending' → menunggu konfirmasi Sumopod webhook
+            // ----------------------------------------------------------------
+            $isSumopodPayment = in_array($request->payment_method, ['qris', 'transfer']);
+            $initialStatus    = $isSumopodPayment ? 'pending' : 'paid';
+
             // 3. Simpan Transaksi Penjualan
             $transaction = Transaction::create([
-                'invoice_code' => $invoiceCode,
-                'customer_id' => $customerId,
-                'total_amount' => $totalAmount,
-                'total_cost' => $totalCost,
-                'gross_profit' => $grossProfit,
+                'invoice_code'  => $invoiceCode,
+                'customer_id'   => $customerId,
+                'total_amount'  => $totalAmount,
+                'total_cost'    => $totalCost,
+                'gross_profit'  => $grossProfit,
                 'payment_method' => $request->payment_method,
-                'payment_status' => 'paid',
-                'claim_token' => $claimToken,
-                'claim_status' => $customerId ? 'claimed' : 'unclaimed',
-                'claimed_at' => $customerId ? now() : null,
+                'payment_status' => $initialStatus,
+                'claim_token'   => $claimToken,
+                'claim_status'  => $customerId ? 'claimed' : 'unclaimed',
+                'claimed_at'    => $customerId ? now() : null,
                 'potential_points' => $potentialPoints,
-                'cashier_name' => $request->cashier_name ?: 'Kasir Toko',
+                'cashier_name'  => $request->cashier_name ?: 'Kasir Toko',
             ]);
 
             // 4. Simpan Detail Item Transaksi
             foreach ($itemsData as $row) {
                 TransactionItem::create([
                     'transaction_id' => $transaction->id,
-                    'product_id' => $row['product']->id,
-                    'product_name' => $row['product']->name,
-                    'quantity' => $row['quantity'],
-                    'unit_price' => $row['unit_price'],
-                    'unit_cost' => $row['unit_cost'],
-                    'subtotal' => $row['subtotal'],
-                    'subtotal_cost' => $row['subtotal_cost'],
-                    'ice_level' => $row['ice_level'],
-                    'sugar_level' => $row['sugar_level'],
-                    'topping' => $row['topping'],
-                    'notes' => $row['notes'],
+                    'product_id'     => $row['product']->id,
+                    'product_name'   => $row['product']->name,
+                    'quantity'       => $row['quantity'],
+                    'unit_price'     => $row['unit_price'],
+                    'unit_cost'      => $row['unit_cost'],
+                    'subtotal'       => $row['subtotal'],
+                    'subtotal_cost'  => $row['subtotal_cost'],
+                    'ice_level'      => $row['ice_level'],
+                    'sugar_level'    => $row['sugar_level'],
+                    'topping'        => $row['topping'],
+                    'notes'          => $row['notes'],
                 ]);
             }
 
-            // 5. ERP Integration: Catat Kas Masuk Otomatis ke Buku Kas
-            CashFlow::create([
-                'type' => 'in',
-                'category' => 'sales',
-                'amount' => $totalAmount,
-                'description' => "Penjualan POS Minuman ({$invoiceCode})",
-                'transaction_id' => $transaction->id,
-                'transaction_date' => now()->toDateString(),
-            ]);
+            // 5a. Pembayaran CASH → langsung catat kas masuk
+            if (! $isSumopodPayment) {
+                CashFlow::create([
+                    'type'             => 'in',
+                    'category'         => 'sales',
+                    'amount'           => $totalAmount,
+                    'description'      => "Penjualan POS Minuman ({$invoiceCode})",
+                    'transaction_id'   => $transaction->id,
+                    'transaction_date' => now()->toDateString(),
+                ]);
+            }
 
-            // Jika langsung terhubung ke customer saat checkout, langsung tambahkan poin
-            if ($customerId && $potentialPoints > 0) {
+            // 5b. QRIS / Transfer → buat payment link Sumopod
+            $paymentUrl = null;
+            if ($isSumopodPayment) {
+                /** @var SumopodService $sumopod */
+                $sumopod = app(SumopodService::class);
+
+                $methodCode = $request->payment_method === 'qris' ? 'QRIS' : 'BANK_TRANSFER';
+
+                $result = $sumopod->createPayment([
+                    'order_id'                => $invoiceCode,
+                    'amount'                  => (int) round($totalAmount),
+                    'currency'                => 'IDR',
+                    'expires_in_hours'        => 2,
+                    'success_return_url'      => route('seller.pos.receipt', $transaction->id),
+                    'cancel_return_url'       => route('seller.pos'),
+                    'payment_method_type_code' => $methodCode,
+                ]);
+
+                if ($result['success']) {
+                    $data = $result['data'];
+                    $transaction->update([
+                        'sumopod_payment_id'  => $data['payment_id'] ?? null,
+                        'sumopod_status'      => $data['status']     ?? 'pending',
+                        'sumopod_payment_url' => $data['payment_link_url'] ?? null,
+                        'sumopod_expires_at'  => isset($data['expires_at'])
+                            ? \Carbon\Carbon::parse($data['expires_at'])
+                            : null,
+                        'sumopod_fee'         => $data['fee']        ?? 0,
+                    ]);
+                    $paymentUrl = $data['payment_link_url'] ?? null;
+                }
+                // Jika Sumopod gagal dipanggil, transaksi tetap tersimpan dengan status pending
+                // kasir bisa retry melalui halaman receipt
+            }
+
+            // 6. Poin loyalitas — hanya diberikan setelah payment confirmed (cash = langsung)
+            if (! $isSumopodPayment && $customerId && $potentialPoints > 0) {
                 $customer->increment('total_points', $potentialPoints);
                 $customer->updateTier();
             }
 
-            return redirect()->route('seller.pos.receipt', $transaction->id)
+            // 7. Redirect ke struk; jika ada payment URL → tampilkan ke kasir
+            $redirectTarget = route('seller.pos.receipt', $transaction->id);
+            if ($paymentUrl) {
+                return redirect($paymentUrl);
+            }
+
+            return redirect($redirectTarget)
                 ->with('success', 'Pesanan berhasil diselesaikan!');
         });
     }

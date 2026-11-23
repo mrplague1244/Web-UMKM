@@ -35,4 +35,19 @@ return [
         ],
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Sumopod Payment Gateway
+    |--------------------------------------------------------------------------
+    | SUMOPOD_BASE_URL   : https://api-pay-sandbox.sumopod.com/api/v1 (sandbox)
+    |                      https://api-pay.sumopod.com/api/v1 (production)
+    | SUMOPOD_API_KEY    : API key dari dashboard Sumopod
+    | SUMOPOD_WEBHOOK_SECRET : Secret untuk verifikasi HMAC-SHA256 webhook
+    */
+    'sumopod' => [
+        'base_url'       => env('SUMOPOD_BASE_URL', 'https://api-pay-sandbox.sumopod.com/api/v1'),
+        'api_key'        => env('SUMOPOD_API_KEY', ''),
+        'webhook_secret' => env('SUMOPOD_WEBHOOK_SECRET', ''),
+    ],
+
 ];

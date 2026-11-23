@@ -6,6 +6,7 @@ use App\Http\Controllers\CustomerPortalController;
 use App\Http\Controllers\ErpController;
 use App\Http\Controllers\PosController;
 use App\Http\Controllers\ScmController;
+use App\Http\Controllers\SumopodWebhookController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -74,3 +75,10 @@ Route::prefix('customer')->group(function () {
     Route::post('/claim', [CustomerPortalController::class, 'processClaim'])->name('customer.claim.process');
     Route::get('/loyalty/{phone}', [CustomerPortalController::class, 'loyaltyView'])->name('customer.loyalty');
 });
+
+// ==========================================
+// SUMOPOD PAYMENT WEBHOOK (tidak butuh CSRF)
+// ==========================================
+Route::post('/webhook/sumopod', [SumopodWebhookController::class, 'handle'])
+    ->name('webhook.sumopod')
+    ->withoutMiddleware([\Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class]);
