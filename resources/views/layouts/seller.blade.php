@@ -97,15 +97,39 @@
                     <span>📱</span>
                     <span>Portal Pelanggan ↗</span>
                 </a>
+
+                @auth
+                    <!-- User Profile & Logout -->
+                    <div class="flex items-center space-x-2 pl-2 border-l border-slate-200">
+                        <div class="text-right hidden md:block">
+                            <span class="block text-xs font-bold text-slate-800 leading-tight">{{ auth()->user()->name }}</span>
+                            <span class="block text-[10px] text-amber-700 font-semibold uppercase tracking-wider">{{ auth()->user()->role ?? 'Staff' }}</span>
+                        </div>
+                        <form action="{{ route('logout') }}" method="POST" class="inline">
+                            @csrf
+                            <button type="submit" class="px-2.5 py-1.5 rounded-lg text-xs font-bold bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 transition-all flex items-center space-x-1" title="Keluar / Logout">
+                                <span>🚪 Keluar</span>
+                            </button>
+                        </form>
+                    </div>
+                @endauth
             </nav>
 
             <!-- Mobile Top Right Badge / Link -->
             <div class="sm:hidden flex items-center space-x-2">
                 <a href="{{ route('customer.claim') }}" target="_blank"
-                   class="px-2.5 py-1 rounded-lg text-[11px] font-bold bg-amber-50 text-amber-900 border border-amber-200 flex items-center space-x-1">
+                   class="px-2 py-1 rounded-lg text-[10px] font-bold bg-amber-50 text-amber-900 border border-amber-200 flex items-center space-x-1">
                     <span>📱</span>
                     <span>Klaim ↗</span>
                 </a>
+                @auth
+                    <form action="{{ route('logout') }}" method="POST" class="inline">
+                        @csrf
+                        <button type="submit" class="p-1 rounded-lg text-[10px] font-bold bg-rose-50 text-rose-700 border border-rose-200" title="Keluar">
+                            🚪
+                        </button>
+                    </form>
+                @endauth
             </div>
         </div>
 
