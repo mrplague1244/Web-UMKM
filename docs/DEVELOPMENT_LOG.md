@@ -210,6 +210,38 @@
 
 ---
 
+### 🏷️ LOG #05: PENAMBAHAN LENGKAP FITUR EDIT / UPDATE DATA PADA SCM, ERP, DAN CRM
+* **Tanggal & Waktu**: Senin, 23 November 2026 - 10:05 WIB
+* **Tipe Perubahan**: `Feature` & `Enhancement`
+* **Branch Git**: `feature/edit-update-features`
+* **Status**: Completed & Verified
+
+#### 1. Latar Belakang & Tujuan
+* Menyempurnakan siklus hidup data (CRUD) dengan memungkinkan pengguna mengedit dan memperbarui entitas bisnis yang ada (Bahan Baku, Menu Minuman & Resep, Pemasok, Catatan Buku Kas, dan Profil Member) tanpa harus menghapus dan membuat ulang data.
+
+#### 2. Rincian Perubahan Teknis
+* **Rute Baru & Controller**:
+  - `PUT /seller/erp/cashflow/{id}`: Method `updateCashFlow` di [ErpController.php](file:///home/veritas/Web-UMKM/app/Http/Controllers/ErpController.php) untuk memperbarui jenis, kategori, nominal, deskripsi, dan tanggal transaksi.
+  - `PUT /seller/crm/customer/{id}`: Method `updateCustomer` di [CrmController.php](file:///home/veritas/Web-UMKM/app/Http/Controllers/CrmController.php) dengan validasi nomor WhatsApp unik pengecualian ID saat ini (`Rule::unique()->ignore($id)`).
+  - Peningkatan `storeSupplier` di [ScmController.php](file:///home/veritas/Web-UMKM/app/Http/Controllers/ScmController.php) untuk mendukung pembaruan data supplier berdasarkan ID.
+  - Dukungan pembaruan takaran resep dinamis dan HPP otomatis pada `storeProduct` dan `storeMaterial`.
+* **Antarmuka Pengguna (UI / Blade)**:
+  - `seller/scm.blade.php`:
+    - Tombol edit (✏️) pada Bahan Baku (mobile & desktop), Menu Minuman, dan Pemasok.
+    - Modal interaktif yang otomatis terisi (*pre-filled*) dengan data saat ini, termasuk komposisi resep minuman dinamis.
+  - `seller/erp.blade.php`:
+    - Tombol edit (✏️) pada tabel Buku Kas dan modal `modalEditCashFlow`.
+  - `seller/crm.blade.php` & `seller/crm_detail.blade.php`:
+    - Tombol edit (✏️) member pada tabel/kartu dan tombol "Edit Profil" di halaman rincian dengan modal `modalEditCustomer`.
+
+#### 3. Hasil Pengujian & Verifikasi
+* **Automated Tests**:
+  - Penambahan 5 test case baru di [CrudOperationsTest.php](file:///home/veritas/Web-UMKM/tests/Feature/CrudOperationsTest.php) (`test_can_edit_material`, `test_can_edit_product_and_recipe`, `test_can_edit_supplier`, `test_can_edit_cash_flow`, `test_can_edit_customer`).
+  - Perintah: `php artisan test`
+  - Hasil: **18 tests passed (107 assertions)** dalam 0.43 detik.
+
+---
+
 ### 📌 RENCANA PENGEMBANGAN BERIKUTNYA (*BACKLOG / ROADMAP*)
 - [ ] Integrasi Payment Gateway otomatis (Midtrans / Xendit QRIS Dinamis).
 - [ ] Export Laporan Keuangan ke format PDF & Excel (.xlsx).

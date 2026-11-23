@@ -107,6 +107,31 @@ class ErpController extends Controller
     }
 
     /**
+     * Perbarui Catatan Arus Kas
+     */
+    public function updateCashFlow(Request $request, $id)
+    {
+        $request->validate([
+            'type' => 'required|in:in,out',
+            'category' => 'required|string',
+            'amount' => 'required|numeric|min:1',
+            'description' => 'required|string|max:255',
+            'transaction_date' => 'required|date',
+        ]);
+
+        $cashFlow = CashFlow::findOrFail($id);
+        $cashFlow->update([
+            'type' => $request->type,
+            'category' => $request->category,
+            'amount' => $request->amount,
+            'description' => $request->description,
+            'transaction_date' => $request->transaction_date,
+        ]);
+
+        return redirect()->route('seller.erp')->with('success', 'Catatan arus kas berhasil diperbarui!');
+    }
+
+    /**
      * Hapus Catatan Arus Kas
      */
     public function destroyCashFlow($id)
