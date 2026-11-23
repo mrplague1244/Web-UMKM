@@ -39,6 +39,7 @@ Route::prefix('seller')->middleware('auth')->group(function () {
     Route::get('/pos', [PosController::class, 'index'])->name('seller.pos');
     Route::post('/pos/checkout', [PosController::class, 'checkout'])->name('seller.pos.checkout');
     Route::get('/pos/receipt/{id}', [PosController::class, 'getReceipt'])->name('seller.pos.receipt');
+    Route::get('/pos/payment-status/{id}', [PosController::class, 'getPaymentStatus'])->name('seller.pos.payment.status');
 
     // 2. SCM (Stok Bahan Baku, Resep, & Supplier)
     Route::get('/scm', [ScmController::class, 'index'])->name('seller.scm');
