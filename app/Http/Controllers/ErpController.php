@@ -21,12 +21,16 @@ class ErpController extends Controller
         $today = Carbon::today();
         $thisMonth = Carbon::now()->startOfMonth();
 
-        // 1. Perhitungan Saldo Kas Riil
+        $startDate = $request->query('start_date');
+        $endDate = $request->query('end_date');
+        $type = $request->query('type');
+
+        // 1. Perhitungan Saldo Kas Riil (Kumulatif Keseluruhan)
         $totalCashIn = CashFlow::where('type', 'in')->sum('amount');
         $totalCashOut = CashFlow::where('type', 'out')->sum('amount');
         $activeCashBalance = $totalCashIn - $totalCashOut;
 
-        // 2. Metrik Omzet & Penjualan
+        // 2. Metrik Omzet & Penjualan Default (Hari Ini & Bulan Ini)
         $todaySales = CashFlow::where('type', 'in')
             ->where('category', 'sales')
             ->whereDate('transaction_date', $today)
@@ -37,7 +41,7 @@ class ErpController extends Controller
             ->whereDate('transaction_date', '>=', $thisMonth)
             ->sum('amount');
 
-        // 3. Metrik Pengeluaran
+        // 3. Metrik Pengeluaran Default Bulan Ini
         $monthlyRestock = CashFlow::where('type', 'out')
             ->where('category', 'restock')
             ->whereDate('transaction_date', '>=', $thisMonth)
@@ -52,11 +56,37 @@ class ErpController extends Controller
         // Formula: Omzet Penjualan - Biaya Kulakan Bahan - Biaya Operasional
         $estimatedNetProfit = $monthlySales - $monthlyRestock - $monthlyOperational;
 
-        // 5. Riwayat Arus Kas Buku Kas
-        $cashFlows = CashFlow::latest('transaction_date')
-            ->latest('id')
-            ->take(50)
-            ->get();
+        // 5. Query Arus Kas dengan Filter Tanggal & Tipe
+        $query = CashFlow::query();
+        $isFiltered = false;
+
+        if ($startDate) {
+            $query->whereDate('transaction_date', '>=', $startDate);
+            $isFiltered = true;
+        }
+        if ($endDate) {
+            $query->whereDate('transaction_date', '<=', $endDate);
+            $isFiltered = true;
+        }
+        if ($type && in_array($type, ['in', 'out'])) {
+            $query->where('type', $type);
+            $isFiltered = true;
+        }
+
+        // Metrik Spesifik Periode Terpilih
+        $filteredQuery = clone $query;
+        $periodCashIn = (clone $filteredQuery)->where('type', 'in')->sum('amount');
+        $periodCashOut = (clone $filteredQuery)->where('type', 'out')->sum('amount');
+        $periodSales = (clone $filteredQuery)->where('type', 'in')->where('category', 'sales')->sum('amount');
+        $periodRestock = (clone $filteredQuery)->where('type', 'out')->where('category', 'restock')->sum('amount');
+        $periodOperational = (clone $filteredQuery)->where('type', 'out')->whereIn('category', ['operational', 'electricity', 'other', 'rent', 'salary'])->sum('amount');
+        $periodNetProfit = $periodSales - $periodRestock - $periodOperational;
+
+        if ($isFiltered) {
+            $cashFlows = $query->latest('transaction_date')->latest('id')->get();
+        } else {
+            $cashFlows = $query->latest('transaction_date')->latest('id')->take(50)->get();
+        }
 
         // 6. Transaksi Penjualan Terakhir
         $recentTransactions = Transaction::with(['items', 'customer'])
@@ -77,6 +107,152 @@ class ErpController extends Controller
             'estimatedNetProfit',
             'cashFlows',
             'recentTransactions',
+            'store',
+            'startDate',
+            'endDate',
+            'type',
+            'isFiltered',
+            'periodCashIn',
+            'periodCashOut',
+            'periodSales',
+            'periodRestock',
+            'periodOperational',
+            'periodNetProfit'
+        ));
+    }
+
+    /**
+     * Export Laporan Arus Kas & Keuangan ke CSV / Excel
+     */
+    public function exportCsv(Request $request)
+    {
+        $startDate = $request->query('start_date');
+        $endDate = $request->query('end_date');
+        $type = $request->query('type');
+
+        $query = CashFlow::query();
+        if ($startDate) {
+            $query->whereDate('transaction_date', '>=', $startDate);
+        }
+        if ($endDate) {
+            $query->whereDate('transaction_date', '<=', $endDate);
+        }
+        if ($type && in_array($type, ['in', 'out'])) {
+            $query->where('type', $type);
+        }
+
+        $cashFlows = $query->orderBy('transaction_date', 'asc')->orderBy('id', 'asc')->get();
+
+        $storeName = config('beverage.store.name', 'Kedai Minuman UMKM');
+        $filename = 'Laporan-Keuangan-' . ($startDate ? $startDate : 'Awal') . '-sd-' . ($endDate ? $endDate : Carbon::today()->toDateString()) . '.csv';
+
+        $totalIn = $cashFlows->where('type', 'in')->sum('amount');
+        $totalOut = $cashFlows->where('type', 'out')->sum('amount');
+        $sales = $cashFlows->where('type', 'in')->where('category', 'sales')->sum('amount');
+        $restock = $cashFlows->where('type', 'out')->where('category', 'restock')->sum('amount');
+        $ops = $cashFlows->where('type', 'out')->whereIn('category', ['operational', 'electricity', 'rent', 'salary', 'other'])->sum('amount');
+        $netProfit = $sales - $restock - $ops;
+
+        $headers = [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+            'Content-Disposition' => "attachment; filename=\"{$filename}\"",
+            'Pragma' => 'no-cache',
+            'Cache-Control' => 'must-revalidate, post-check=0, pre-check=0',
+            'Expires' => '0',
+        ];
+
+        $callback = function () use ($storeName, $startDate, $endDate, $cashFlows, $totalIn, $totalOut, $sales, $restock, $ops, $netProfit) {
+            $file = fopen('php://output', 'w');
+
+            // UTF-8 BOM agar terbaca sempurna di Microsoft Excel Windows
+            fputs($file, "\xEF\xBB\xBF");
+
+            // Header Ringkasan Laporan
+            fputcsv($file, ["LAPORAN KEUANGAN & ARUS KAS - {$storeName}"]);
+            fputcsv($file, ["Periode", ($startDate ? $startDate : 'Awal Catatan') . " s/d " . ($endDate ? $endDate : date('Y-m-d'))]);
+            fputcsv($file, ["Tanggal Unduh", Carbon::now()->format('d/m/Y H:i') . " WIB"]);
+            fputcsv($file, []);
+
+            // Ringkasan Finansial
+            fputcsv($file, ["RINGKASAN FINANSIAL PERIODE"]);
+            fputcsv($file, ["Total Kas Masuk", "Rp " . number_format($totalIn, 0, ',', '.')]);
+            fputcsv($file, ["Total Kas Keluar", "Rp " . number_format($totalOut, 0, ',', '.')]);
+            fputcsv($file, ["Omzet Penjualan", "Rp " . number_format($sales, 0, ',', '.')]);
+            fputcsv($file, ["Beban Kulakan Bahan", "Rp " . number_format($restock, 0, ',', '.')]);
+            fputcsv($file, ["Beban Operasional", "Rp " . number_format($ops, 0, ',', '.')]);
+            fputcsv($file, ["Estimasi Laba Bersih", "Rp " . number_format($netProfit, 0, ',', '.')]);
+            fputcsv($file, []);
+
+            // Tabel Rincian Arus Kas
+            fputcsv($file, ["RINCIAN CATATAN ARUS KAS"]);
+            fputcsv($file, ["No", "Tanggal", "Tipe", "Kategori", "Keterangan", "Kas Masuk (Rp)", "Kas Keluar (Rp)"]);
+
+            $no = 1;
+            foreach ($cashFlows as $cf) {
+                fputcsv($file, [
+                    $no++,
+                    $cf->transaction_date ? $cf->transaction_date->format('d/m/Y') : '-',
+                    $cf->type === 'in' ? 'Masuk' : 'Keluar',
+                    ucfirst($cf->category),
+                    $cf->description,
+                    $cf->type === 'in' ? $cf->amount : 0,
+                    $cf->type === 'out' ? $cf->amount : 0,
+                ]);
+            }
+
+            // Baris Total
+            fputcsv($file, []);
+            fputcsv($file, ["TOTAL", "", "", "", "", $totalIn, $totalOut]);
+            fputcsv($file, ["SELISIH KAS (BERSIH)", "", "", "", "", $totalIn - $totalOut, ""]);
+
+            fclose($file);
+        };
+
+        return response()->stream($callback, 200, $headers);
+    }
+
+    /**
+     * Tampilan Cetak / Print Laporan Keuangan (Siap PDF)
+     */
+    public function printReport(Request $request)
+    {
+        $startDate = $request->query('start_date');
+        $endDate = $request->query('end_date');
+        $type = $request->query('type');
+
+        $query = CashFlow::query();
+        if ($startDate) {
+            $query->whereDate('transaction_date', '>=', $startDate);
+        }
+        if ($endDate) {
+            $query->whereDate('transaction_date', '<=', $endDate);
+        }
+        if ($type && in_array($type, ['in', 'out'])) {
+            $query->where('type', $type);
+        }
+
+        $cashFlows = $query->orderBy('transaction_date', 'asc')->orderBy('id', 'asc')->get();
+
+        $totalIn = $cashFlows->where('type', 'in')->sum('amount');
+        $totalOut = $cashFlows->where('type', 'out')->sum('amount');
+        $sales = $cashFlows->where('type', 'in')->where('category', 'sales')->sum('amount');
+        $restock = $cashFlows->where('type', 'out')->where('category', 'restock')->sum('amount');
+        $operational = $cashFlows->where('type', 'out')->whereIn('category', ['operational', 'electricity', 'rent', 'salary', 'other'])->sum('amount');
+        $netProfit = $sales - $restock - $operational;
+
+        $store = config('beverage.store', []);
+
+        return view('seller.erp_print', compact(
+            'cashFlows',
+            'startDate',
+            'endDate',
+            'type',
+            'totalIn',
+            'totalOut',
+            'sales',
+            'restock',
+            'operational',
+            'netProfit',
             'store'
         ));
     }

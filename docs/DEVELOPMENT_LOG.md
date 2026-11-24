@@ -272,7 +272,40 @@
 
 ---
 
+### 🏷️ LOG #07: IMPLEMENTASI FILTER RENTANG TANGGAL & EXPORT LAPORAN KEUANGAN (CSV & CETAK/PDF)
+* **Tanggal & Waktu**: Selasa, 24 November 2026 - 19:50 WIB
+* **Tipe Perubahan**: `Feature` & `Reporting`
+* **Branch Git**: `main`
+* **Status**: Completed & Verified
+
+#### 1. Latar Belakang & Tujuan
+* Menyediakan kemampuan analisis laporan keuangan berbasis periode waktu fleksibel (harian, mingguan, bulanan, atau rentang tanggal kustom) pada modul ERP kedai minuman.
+* Memungkinkan kasir dan pemilik usaha mengekspor data pembukuan arus kas ke dalam berkas CSV/Excel untuk diolah lebih lanjut serta mencetak laporan fisik atau menyimpannya langsung sebagai PDF resmi bertanda tangan.
+
+#### 2. Rincian Perubahan Teknis
+* **Rute Baru (`routes/web.php`)**:
+  - `GET /seller/erp/export`: Streaming download berkas CSV laporan keuangan terfilter.
+  - `GET /seller/erp/print`: Tampilan pratinjau cetak resmi A4 dan penyimpanan PDF.
+* **Controller (`ErpController.php`)**:
+  - Peningkatan method `index(Request $request)`: Menerima query parameter `start_date`, `end_date`, dan `type` untuk menyaring arus kas dan menghitung metrik finansial periode terpilih.
+  - Method baru `exportCsv(Request $request)`: Menggunakan `StreamedResponse` dengan encoding UTF-8 BOM agar angka dan teks terbaca sempurna di Microsoft Excel Windows, mencakup ringkasan metrik dan rincian transaksi arus kas.
+  - Method baru `printReport(Request $request)`: Menyiapkan dataset dan ringkasan keuangan untuk pratinjau cetak dan PDF.
+* **Antarmuka Pengguna (UI / Blade)**:
+  - `seller/erp.blade.php`:
+    - Bar filter rentang tanggal interaktif dengan input `start_date`, `end_date`, dan pilihan tipe arus kas (`in`/`out`).
+    - Tombol preset cepat: *Hari Ini*, *7 Hari Terakhir*, *Bulan Ini*, *Bulan Lalu*, dan *Semua Waktu*.
+    - Banner ringkasan periode aktif dengan 4 metrik mini: Kas Masuk, Kas Keluar, Omzet, dan Laba Bersih Periode.
+    - Tombol aksi cepat: **📥 Export CSV** dan **🖨️ Cetak / PDF** pada header utama dan tabel Buku Kas.
+  - `seller/erp_print.blade.php` (Berkas Baru):
+    - Desain laporan formal A4 dengan kop kedai, identitas toko, kartu metrik, tabel rincian transaksi arus kas, dan kolom tanda tangan pengesahan kasir & pemilik kedai.
+    - Optimasi CSS `@media print` untuk menyembunyikan tombol navigasi saat dicetak atau disimpan sebagai PDF.
+* **Automated Tests**:
+  - Berkas baru: `tests/Feature/ErpFeaturesTest.php` (5 test case komprehensif: dashboard render, filter rentang tanggal, filter tipe arus kas, stream export CSV dengan UTF-8 BOM, dan render print report).
+
+---
+
 ### 📌 RENCANA PENGEMBANGAN BERIKUTNYA (*BACKLOG / ROADMAP*)
 - [ ] Integrasi Payment Gateway otomatis (Midtrans / Xendit QRIS Dinamis).
-- [ ] Export Laporan Keuangan ke format PDF & Excel (.xlsx).
+- [x] Export Laporan Keuangan ke format CSV / Excel & Cetak PDF.
 - [ ] Pengingat otomatis via WhatsApp jika pelanggan sudah lama tidak berkunjung.
+- [ ] Fitur Shift Kasir & Rekonsiliasi Kas Laci (Cash Drawer).

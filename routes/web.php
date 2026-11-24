@@ -53,6 +53,8 @@ Route::prefix('seller')->middleware('auth')->group(function () {
 
     // 3. ERP (Keuangan, Laba Rugi, & Arus Kas)
     Route::get('/erp', [ErpController::class, 'index'])->name('seller.erp');
+    Route::get('/erp/export', [ErpController::class, 'exportCsv'])->name('seller.erp.export');
+    Route::get('/erp/print', [ErpController::class, 'printReport'])->name('seller.erp.print');
     Route::post('/erp/cashflow', [ErpController::class, 'storeCashFlow'])->name('seller.erp.cashflow');
     Route::put('/erp/cashflow/{id}', [ErpController::class, 'updateCashFlow'])->name('seller.erp.cashflow.update');
     Route::delete('/erp/cashflow/{id}', [ErpController::class, 'destroyCashFlow'])->name('seller.erp.cashflow.destroy');
