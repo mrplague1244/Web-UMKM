@@ -10,9 +10,126 @@
             <h1 class="text-lg sm:text-xl font-bold text-slate-900">💰 Enterprise Resource Planning (ERP)</h1>
             <p class="text-[11px] sm:text-xs text-slate-500">Monitoring arus kas, omzet penjualan, biaya operasional, dan laba rugi kedai minuman.</p>
         </div>
-        <button onclick="openModal('modalCashFlow')" class="px-3.5 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold rounded-xl shadow-sm transition-all flex items-center space-x-1.5 self-start sm:self-auto active:scale-95">
-            <span>+ Catat Biaya Operasional</span>
-        </button>
+        <div class="flex flex-wrap items-center gap-2 self-start sm:self-auto">
+            <a href="{{ route('seller.erp.export', request()->query()) }}" class="px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-sm transition-all flex items-center space-x-1.5 active:scale-95" title="Unduh data dalam format CSV / Excel">
+                <span>📥 Export CSV</span>
+            </a>
+            <a href="{{ route('seller.erp.print', request()->query()) }}" target="_blank" class="px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl shadow-sm transition-all flex items-center space-x-1.5 active:scale-95" title="Buka format cetak rapi / Simpan PDF">
+                <span>🖨️ Cetak / PDF</span>
+            </a>
+            <button onclick="openModal('modalCashFlow')" class="px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold rounded-xl shadow-sm transition-all flex items-center space-x-1.5 active:scale-95">
+                <span>+ Catat Biaya Ops</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- FILTER RENTANG TANGGAL & TIPE KAS -->
+    <div class="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm space-y-3">
+        <form id="filterForm" action="{{ route('seller.erp') }}" method="GET" class="space-y-3">
+            <div class="flex flex-col md:flex-row md:items-end justify-between gap-3">
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 flex-1">
+                    <!-- Dari Tanggal -->
+                    <div>
+                        <label class="block text-[11px] font-bold text-slate-600 mb-1">📅 Dari Tanggal</label>
+                        <input type="date" id="inputStartDate" name="start_date" value="{{ $startDate ?? '' }}"
+                               class="w-full px-3 py-1.5 text-xs border border-slate-300 rounded-xl focus:ring-1 focus:ring-amber-500 font-medium text-slate-700">
+                    </div>
+                    <!-- Sampai Tanggal -->
+                    <div>
+                        <label class="block text-[11px] font-bold text-slate-600 mb-1">📅 Sampai Tanggal</label>
+                        <input type="date" id="inputEndDate" name="end_date" value="{{ $endDate ?? '' }}"
+                               class="w-full px-3 py-1.5 text-xs border border-slate-300 rounded-xl focus:ring-1 focus:ring-amber-500 font-medium text-slate-700">
+                    </div>
+                    <!-- Filter Tipe -->
+                    <div>
+                        <label class="block text-[11px] font-bold text-slate-600 mb-1">🏷️ Tipe Arus Kas</label>
+                        <select name="type" class="w-full px-3 py-1.5 text-xs border border-slate-300 rounded-xl focus:ring-1 focus:ring-amber-500 font-medium text-slate-700">
+                            <option value="">Semua Arus Kas</option>
+                            <option value="in" {{ ($type ?? '') === 'in' ? 'selected' : '' }}>+ Kas Masuk (Pemasukan)</option>
+                            <option value="out" {{ ($type ?? '') === 'out' ? 'selected' : '' }}>- Kas Keluar (Pengeluaran)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Tombol Submit & Reset -->
+                <div class="flex items-center gap-2 self-end sm:self-auto">
+                    <button type="submit" class="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-xl shadow-sm transition-all flex items-center space-x-1.5 active:scale-95">
+                        <span>🔍 Terapkan</span>
+                    </button>
+                    @if($isFiltered)
+                        <a href="{{ route('seller.erp') }}" class="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-bold rounded-xl transition-all" title="Hapus filter tanggal">
+                            ✕ Reset
+                        </a>
+                    @endif
+                </div>
+            </div>
+
+            <!-- Tombol Cepat Preset Periode -->
+            <div class="flex flex-wrap items-center gap-1.5 pt-1 text-[11px] border-t border-slate-100">
+                <span class="text-slate-400 font-medium mr-1">Pilihan Cepat:</span>
+                <button type="button" onclick="setPreset('today')" class="px-2.5 py-1 bg-slate-100 hover:bg-amber-100 hover:text-amber-900 text-slate-700 rounded-lg transition-colors font-semibold">
+                    Hari Ini
+                </button>
+                <button type="button" onclick="setPreset('last7')" class="px-2.5 py-1 bg-slate-100 hover:bg-amber-100 hover:text-amber-900 text-slate-700 rounded-lg transition-colors font-semibold">
+                    7 Hari Terakhir
+                </button>
+                <button type="button" onclick="setPreset('thisMonth')" class="px-2.5 py-1 bg-slate-100 hover:bg-amber-100 hover:text-amber-900 text-slate-700 rounded-lg transition-colors font-semibold">
+                    Bulan Ini
+                </button>
+                <button type="button" onclick="setPreset('lastMonth')" class="px-2.5 py-1 bg-slate-100 hover:bg-amber-100 hover:text-amber-900 text-slate-700 rounded-lg transition-colors font-semibold">
+                    Bulan Lalu
+                </button>
+                <button type="button" onclick="setPreset('all')" class="px-2.5 py-1 bg-slate-100 hover:bg-amber-100 hover:text-amber-900 text-slate-700 rounded-lg transition-colors font-semibold">
+                    Semua Waktu
+                </button>
+            </div>
+        </form>
+
+        @if($isFiltered)
+            <!-- BANNER INDIKATOR FILTER AKTIF & RINGKASAN PERIODE -->
+            <div class="mt-3 p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs space-y-2">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-1 text-amber-900 font-semibold">
+                    <div class="flex items-center space-x-1.5">
+                        <span class="text-sm">📌</span>
+                        <span>
+                            Periode Aktif:
+                            <strong class="font-extrabold text-amber-950">
+                                {{ $startDate ? \Carbon\Carbon::parse($startDate)->format('d/m/Y') : 'Awal' }}
+                                s/d
+                                {{ $endDate ? \Carbon\Carbon::parse($endDate)->format('d/m/Y') : 'Sekarang' }}
+                            </strong>
+                            @if($type)
+                                ({{ $type === 'in' ? 'Hanya Kas Masuk' : 'Hanya Kas Keluar' }})
+                            @endif
+                        </span>
+                    </div>
+                    <span class="text-[11px] text-amber-800">
+                        Ditemukan: <strong>{{ $cashFlows->count() }}</strong> catatan arus kas
+                    </span>
+                </div>
+                <!-- Kartu Metrik Mini Periode Terfilter -->
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-2 border-t border-amber-200/60 text-[11px]">
+                    <div class="bg-white/80 p-2 rounded-lg border border-amber-100">
+                        <span class="text-slate-500 block text-[10px]">Total Kas Masuk</span>
+                        <strong class="text-emerald-700 text-xs">Rp {{ number_format($periodCashIn, 0, ',', '.') }}</strong>
+                    </div>
+                    <div class="bg-white/80 p-2 rounded-lg border border-amber-100">
+                        <span class="text-slate-500 block text-[10px]">Total Kas Keluar</span>
+                        <strong class="text-rose-700 text-xs">Rp {{ number_format($periodCashOut, 0, ',', '.') }}</strong>
+                    </div>
+                    <div class="bg-white/80 p-2 rounded-lg border border-amber-100">
+                        <span class="text-slate-500 block text-[10px]">Omzet Penjualan</span>
+                        <strong class="text-amber-800 text-xs">Rp {{ number_format($periodSales, 0, ',', '.') }}</strong>
+                    </div>
+                    <div class="bg-white/80 p-2 rounded-lg border border-amber-100">
+                        <span class="text-slate-500 block text-[10px]">Laba Bersih Periode</span>
+                        <strong class="{{ $periodNetProfit >= 0 ? 'text-emerald-700' : 'text-rose-700' }} text-xs">
+                            Rp {{ number_format($periodNetProfit, 0, ',', '.') }}
+                        </strong>
+                    </div>
+                </div>
+            </div>
+        @endif
     </div>
 
     <!-- KARTU METRIK KEUANGAN (2x2 di Smartphone, 4 Kolom di Desktop) -->
@@ -72,10 +189,18 @@
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 sm:gap-6">
         <!-- Kolom Kiri: Buku Kas Arus Kas (8 Kolom) -->
         <div class="lg:col-span-8 bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
-            <div class="p-3.5 sm:p-4 border-b border-slate-100 flex items-center justify-between">
+            <div class="p-3.5 sm:p-4 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                 <div>
                     <h3 class="font-bold text-slate-900 text-sm">Buku Kas (Arus Kas Masuk & Keluar)</h3>
                     <p class="text-[10px] sm:text-[11px] text-slate-500">Mencatat otomatis penjualan kasir, kulakan SCM, dan biaya operasional.</p>
+                </div>
+                <div class="flex items-center space-x-1.5 self-start sm:self-auto">
+                    <a href="{{ route('seller.erp.export', request()->query()) }}" class="text-[11px] font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 px-2.5 py-1 rounded-lg transition-colors flex items-center space-x-1" title="Unduh data dalam format CSV / Excel">
+                        <span>📥 CSV</span>
+                    </a>
+                    <a href="{{ route('seller.erp.print', request()->query()) }}" target="_blank" class="text-[11px] font-bold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 px-2.5 py-1 rounded-lg transition-colors flex items-center space-x-1" title="Buka format cetak rapi / Simpan PDF">
+                        <span>🖨️ Cetak</span>
+                    </a>
                 </div>
             </div>
             <div class="overflow-x-auto">
@@ -325,6 +450,44 @@
         document.getElementById('editCashFlowDescription').value = data.description;
         document.getElementById('editCashFlowDate').value = data.transaction_date ? data.transaction_date.substring(0, 10) : '';
         openModal('modalEditCashFlow');
+    }
+
+    function setPreset(preset) {
+        const today = new Date();
+        const formatDate = (date) => {
+            const y = date.getFullYear();
+            const m = String(date.getMonth() + 1).padStart(2, '0');
+            const d = String(date.getDate()).padStart(2, '0');
+            return `${y}-${m}-${d}`;
+        };
+
+        const startInput = document.getElementById('inputStartDate');
+        const endInput = document.getElementById('inputEndDate');
+
+        if (preset === 'today') {
+            const todayStr = formatDate(today);
+            startInput.value = todayStr;
+            endInput.value = todayStr;
+        } else if (preset === 'last7') {
+            const past7 = new Date();
+            past7.setDate(today.getDate() - 6);
+            startInput.value = formatDate(past7);
+            endInput.value = formatDate(today);
+        } else if (preset === 'thisMonth') {
+            const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+            startInput.value = formatDate(firstDay);
+            endInput.value = formatDate(today);
+        } else if (preset === 'lastMonth') {
+            const firstDay = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+            const lastDay = new Date(today.getFullYear(), today.getMonth(), 0);
+            startInput.value = formatDate(firstDay);
+            endInput.value = formatDate(lastDay);
+        } else if (preset === 'all') {
+            startInput.value = '';
+            endInput.value = '';
+        }
+
+        document.getElementById('filterForm').submit();
     }
 </script>
 @endpush
