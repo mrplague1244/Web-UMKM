@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Customer;
 use App\Models\LoyaltyLog;
+use App\Models\Product;
 use App\Models\Transaction;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -102,5 +103,56 @@ class CustomerPortalController extends Controller
         $freeDrinksEarned = (int) floor($customer->total_points / $stampTarget);
 
         return view('customer.loyalty', compact('customer', 'store', 'stampTarget', 'currentStamps', 'freeDrinksEarned'));
+    }
+
+    /**
+     * Halaman Menu Digital Publik untuk Pelanggan (QR Meja / Dine-in)
+     */
+    public function menuView(Request $request)
+    {
+        $tableNo = $request->query('table');
+        $categoryFilter = $request->query('category', 'Semua');
+        $search = $request->query('q');
+
+        $query = Product::where('is_active', true)->with('recipes.material');
+
+        if ($categoryFilter && $categoryFilter !== 'Semua') {
+            $query->where('category', $categoryFilter);
+        }
+
+        if ($search) {
+            $query->where('name', 'like', "%{$search}%");
+        }
+
+        $products = $query->orderBy('category')->orderBy('name')->get();
+        $allCategories = ['Semua', ...Product::where('is_active', true)->pluck('category')->unique()->values()->all()];
+
+        $store = config('beverage.store', []);
+        $variants = config('beverage.variants', []);
+
+        return view('customer.menu', compact(
+            'products',
+            'allCategories',
+            'categoryFilter',
+            'search',
+            'tableNo',
+            'store',
+            'variants'
+        ));
+    }
+
+    /**
+     * Halaman Cetak Kartu QR Meja (Table Standee) untuk Pengelola Kedai
+     */
+    public function tableQrView(Request $request)
+    {
+        $tableCount = (int) $request->query('tables', 10);
+        if ($tableCount < 1) $tableCount = 1;
+        if ($tableCount > 30) $tableCount = 30;
+
+        $store = config('beverage.store', []);
+        $baseUrl = url('/menu');
+
+        return view('seller.table_qr', compact('tableCount', 'store', 'baseUrl'));
     }
 }
