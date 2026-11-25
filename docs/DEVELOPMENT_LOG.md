@@ -304,8 +304,43 @@
 
 ---
 
+### 🏷️ LOG #08: IMPLEMENTASI ANALISIS BISNIS, VISUALISASI GRAFIK PENJUALAN, & AUDIT BAHAN RUSAK
+* **Tanggal & Waktu**: Rabu, 25 November 2026 - 07:30 WIB
+* **Tipe Perubahan**: `Feature` & `Data Analytics`
+* **Branch Git**: `feature/analytics-visualisasi-bisnis`
+* **Status**: Completed & Verified
+
+#### 1. Latar Belakang & Tujuan
+* Menyediakan dasbor visualisasi data bisnis berbasis grafik interaktif (Chart.js) untuk membantu pemilik kedai menganalisis tren performa omzet harian, mengidentifikasi jam-jam tersibuk kedai (peak hours), mengetahui menu terlaris vs menu kurang laku, serta proporsi adopsi pembayaran nontunai (QRIS & Transfer).
+* Menyediakan modul pencatatan audit bahan baku rusak/tumpah/kedaluwarsa (Waste & Spoilage) agar stok fisik dan nilai buku kas selalu selaras.
+
+#### 2. Rincian Perubahan Teknis
+* **Controller Baru (`AnalyticsController.php`)**:
+  - `index(Request $request)`: Mengagregasikan data KPI (Omzet, Volume Cup, AOV, Laba Kotor), data grafik garis tren harian, data diagram batang jam sibuk (08:00 - 22:00), data menu terlaris (Top 5) & slow moving, serta distribusi metode pembayaran.
+  - `storeWaste(Request $request)`: Mencatat pengurangan stok bahan rusak, audit trail `stock_movements` (type: `waste`), dan pencatatan otomatis beban kerugian pada `cash_flows` ERP.
+  - `destroyWaste($id)`: Membatalkan catatan bahan rusak dan mengembalikan stok fisik secara aman.
+* **Rute Baru (`routes/web.php`)**:
+  - `GET /seller/analytics`: Halaman dasbor analisis bisnis.
+  - `POST /seller/analytics/waste`: Simpan catatan bahan rusak.
+  - `DELETE /seller/analytics/waste/{id}`: Batalkan catatan bahan rusak.
+* **Antarmuka Pengguna (UI / Blade)**:
+  - `seller/analytics.blade.php` (Berkas Baru):
+    - 4 Kartu KPI: Omzet Penjualan & Margin, Volume Minuman (Cup), Rata-rata Pesanan (AOV), dan Jam Tersibuk Kedai.
+    - Grafik Garis Tren Harian: Perbandingan Omzet vs Beban Harian.
+    - Grafik Batang Jam Sibuk (Peak Hours): Bar chart jam 08:00 - 22:00 dengan penanda jam puncak dan rekomendasi barista.
+    - Top 5 Best Sellers vs Slow Moving Alert: Progress bar kontribusi omzet per menu dan rekomendasi promo bundling.
+    - Grafik Donat Metode Pembayaran: Rasio Tunai vs QRIS Nontunai.
+    - Tabel Audit Bahan Rusak & Modal Input `modalWaste`.
+  - `layouts/seller.blade.php`: Menambahkan navigasi `📊 Analisis` pada Desktop Navbar dan Mobile Bottom Bar.
+  - `seller/erp.blade.php`: Menambahkan tombol jalan pintas `📊 Grafik Analisis`.
+* **Automated Tests**:
+  - Berkas baru: `tests/Feature/AnalyticsTest.php` (5 test case: render dasbor, agregasi data transaksi & best seller, filter rentang waktu, pencatatan waste & potongan stok, dan pembatalan waste).
+
+---
+
 ### 📌 RENCANA PENGEMBANGAN BERIKUTNYA (*BACKLOG / ROADMAP*)
 - [ ] Integrasi Payment Gateway otomatis (Midtrans / Xendit QRIS Dinamis).
 - [x] Export Laporan Keuangan ke format CSV / Excel & Cetak PDF.
+- [x] Dashboard Analisis Bisnis & Visualisasi Data (Grafik Tren, Peak Hours, & Waste).
 - [ ] Pengingat otomatis via WhatsApp jika pelanggan sudah lama tidak berkunjung.
 - [ ] Fitur Shift Kasir & Rekonsiliasi Kas Laci (Cash Drawer).

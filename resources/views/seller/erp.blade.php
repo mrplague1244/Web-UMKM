@@ -11,6 +11,9 @@
             <p class="text-[11px] sm:text-xs text-slate-500">Monitoring arus kas, omzet penjualan, biaya operasional, dan laba rugi kedai minuman.</p>
         </div>
         <div class="flex flex-wrap items-center gap-2 self-start sm:self-auto">
+            <a href="{{ route('seller.analytics') }}" class="px-3 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-xl shadow-sm transition-all flex items-center space-x-1.5 active:scale-95" title="Lihat Visualisasi Grafik & Analisis Bisnis">
+                <span>📊 Grafik Analisis</span>
+            </a>
             <a href="{{ route('seller.erp.export', request()->query()) }}" class="px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-sm transition-all flex items-center space-x-1.5 active:scale-95" title="Unduh data dalam format CSV / Excel">
                 <span>📥 Export CSV</span>
             </a>
