@@ -86,6 +86,12 @@
                     <span>ERP Keuangan</span>
                 </a>
 
+                <a href="{{ route('seller.analytics') }}"
+                   class="px-3 py-2 rounded-lg text-sm font-semibold transition-all flex items-center space-x-1.5 {{ request()->routeIs('seller.analytics*') ? 'bg-amber-600 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900' }}">
+                    <span>📊</span>
+                    <span>Analisis</span>
+                </a>
+
                 <a href="{{ route('seller.crm') }}"
                    class="px-3 py-2 rounded-lg text-sm font-semibold transition-all flex items-center space-x-1.5 {{ request()->routeIs('seller.crm*') ? 'bg-amber-600 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900' }}">
                     <span>👥</span>
@@ -220,9 +226,15 @@
         </a>
 
         <a href="{{ route('seller.erp') }}"
-           class="flex flex-col items-center py-1 px-3 rounded-xl text-center transition-all {{ request()->routeIs('seller.erp*') ? 'text-amber-700 font-extrabold' : 'text-slate-500 hover:text-slate-900 font-medium' }}">
+           class="flex flex-col items-center py-1 px-2 rounded-xl text-center transition-all {{ request()->routeIs('seller.erp*') ? 'text-amber-700 font-extrabold' : 'text-slate-500 hover:text-slate-900 font-medium' }}">
             <span class="text-lg {{ request()->routeIs('seller.erp*') ? 'scale-110' : '' }} transition-transform">💰</span>
             <span class="text-[10px] mt-0.5">ERP</span>
+        </a>
+
+        <a href="{{ route('seller.analytics') }}"
+           class="flex flex-col items-center py-1 px-2 rounded-xl text-center transition-all {{ request()->routeIs('seller.analytics*') ? 'text-amber-700 font-extrabold' : 'text-slate-500 hover:text-slate-900 font-medium' }}">
+            <span class="text-lg {{ request()->routeIs('seller.analytics*') ? 'scale-110' : '' }} transition-transform">📊</span>
+            <span class="text-[10px] mt-0.5">Analisis</span>
         </a>
 
         <a href="{{ route('seller.crm') }}"

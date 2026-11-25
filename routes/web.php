@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AnalyticsController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CrmController;
 use App\Http\Controllers\CustomerPortalController;
@@ -68,6 +69,11 @@ Route::prefix('seller')->middleware('auth')->group(function () {
     Route::get('/crm/{id}', [CrmController::class, 'show'])->name('seller.crm.detail');
     Route::post('/crm/customer/{id}/points', [CrmController::class, 'adjustPoints'])->name('seller.crm.customer.points');
     Route::delete('/crm/loyalty-log/{id}', [CrmController::class, 'destroyLoyaltyLog'])->name('seller.crm.loyalty.destroy');
+
+    // 5. Analisis Bisnis & Visualisasi Data
+    Route::get('/analytics', [AnalyticsController::class, 'index'])->name('seller.analytics');
+    Route::post('/analytics/waste', [AnalyticsController::class, 'storeWaste'])->name('seller.analytics.waste');
+    Route::delete('/analytics/waste/{id}', [AnalyticsController::class, 'destroyWaste'])->name('seller.analytics.waste.destroy');
 });
 
 // ==========================================
