@@ -338,9 +338,45 @@
 
 ---
 
+### 🏷️ LOG #09: PENINGKATAN CUSTOMER EXPERIENCE (MENU DIGITAL PUBLIK QR MEJA & PWA STANDALONE)
+* **Tanggal & Waktu**: Rabu, 25 November 2026 - 07:45 WIB
+* **Tipe Perubahan**: `Feature` & `Customer Experience`
+* **Branch Git**: `feature/customer-experience-menu-pwa`
+* **Status**: Completed & Verified
+
+#### 1. Latar Belakang & Tujuan
+* Memodernisasi alur pemesanan kedai minuman dengan menyediakan menu digital publik interaktif (`/menu`) yang dapat dibuka langsung oleh pelanggan di smartphone melalui pemindaian kode QR di meja kedai (*Dine-In Self-Order / QR Menu*) tanpa perlu mengunduh aplikasi atau login.
+* Menyediakan fitur cetak kartu nomor meja siap cetak (*Table Standee*) bagi pemilik usaha dan menambahkan dukungan Progressive Web App (PWA) agar kasir maupun pelanggan dapat menginstal aplikasi web langsung di layar utama smartphone/tablet (*Add to Home Screen*).
+
+#### 2. Rincian Perubahan Teknis
+* **Progressive Web App (PWA)**:
+  - `public/manifest.json`: Metadata PWA lengkap (ikon 192px/512px, tema warna `#d97706`, display standalone).
+  - `public/sw.js`: Service Worker untuk caching aset statis dan kapabilitas instalasi PWA.
+  - `public/icons/icon-192.svg` & `icon-512.svg`: Ikon SVG bertema cup minuman boba kopi.
+  - Integrasi meta tag PWA & script service worker pada `layouts/seller.blade.php` dan `customer/menu.blade.php`.
+* **Controller (`CustomerPortalController.php`)**:
+  - `menuView(Request $request)`: Menampilkan katalog menu publik aktif dengan filter kategori instan, pencarian kata kunci, dan deteksi parameter nomor meja (`table`).
+  - `tableQrView(Request $request)`: Menyiapkan lembar kartu meja siap cetak dengan QR code generator dinamis.
+* **Rute Baru (`routes/web.php`)**:
+  - `GET /menu` & `GET /customer/menu`: Halaman menu digital publik pelanggan.
+  - `GET /seller/table-qr`: Halaman cetak kartu meja untuk kasir/pemilik toko.
+* **Antarmuka Pengguna (UI / Blade)**:
+  - `customer/menu.blade.php` (Berkas Baru):
+    - Tampilan menu mobile-first responsif dengan kartu menu, badge harga, deskripsi bahan, indikator meja aktif, modal varian (level gula, es, topping), dan tombol cepat chat pemesanan WhatsApp.
+    - Tombol promosi stamp loyalitas terhubung langsung ke portal klaim.
+    - Tombol prompt "Pasang Aplikasi" PWA otomatis.
+  - `seller/table_qr.blade.php` (Berkas Baru):
+    - Lembar cetak A4 kartu meja (2 kolom) dengan nomor meja, logo kedai, QR code generator resolusi tinggi, petunjuk scan, dan garis panduan potong gunting.
+  - `layouts/seller.blade.php`: Menambahkan link pintas `📖 Menu Digital` dan `🪧 QR Meja`.
+* **Automated Tests**:
+  - Berkas baru: `tests/Feature/CustomerExperienceTest.php` (5 test case: render menu tanpa auth, deteksi parameter nomor meja, filter kategori/pencarian, pratinjau cetak QR meja, dan validitas manifest PWA).
+
+---
+
 ### 📌 RENCANA PENGEMBANGAN BERIKUTNYA (*BACKLOG / ROADMAP*)
 - [ ] Integrasi Payment Gateway otomatis (Midtrans / Xendit QRIS Dinamis).
 - [x] Export Laporan Keuangan ke format CSV / Excel & Cetak PDF.
 - [x] Dashboard Analisis Bisnis & Visualisasi Data (Grafik Tren, Peak Hours, & Waste).
+- [x] Pengalaman Pelanggan Modern (Katalog Menu Digital QR Meja & Progressive Web App PWA).
 - [ ] Pengingat otomatis via WhatsApp jika pelanggan sudah lama tidak berkunjung.
 - [ ] Fitur Shift Kasir & Rekonsiliasi Kas Laci (Cash Drawer).

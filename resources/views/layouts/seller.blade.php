@@ -4,6 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>@yield('title', 'Sistem UMKM Minuman') - {{ config('beverage.store.name', 'Kedai Kopi & Teh') }}</title>
+    <!-- PWA & Mobile Meta Tags -->
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#d97706">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="apple-touch-icon" href="/icons/icon-192.svg">
+
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -96,6 +103,18 @@
                    class="px-3 py-2 rounded-lg text-sm font-semibold transition-all flex items-center space-x-1.5 {{ request()->routeIs('seller.crm*') ? 'bg-amber-600 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900' }}">
                     <span>👥</span>
                     <span>CRM Loyalitas</span>
+                </a>
+
+                <a href="{{ route('menu') }}" target="_blank"
+                   class="inline-flex px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-amber-50 hover:bg-amber-100 text-amber-900 items-center space-x-1 transition-all border border-amber-200" title="Buka Menu Digital Pelanggan">
+                    <span>📖</span>
+                    <span>Menu ↗</span>
+                </a>
+
+                <a href="{{ route('seller.table_qr') }}" target="_blank"
+                   class="inline-flex px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 items-center space-x-1 transition-all border border-slate-300" title="Cetak Kartu QR Meja Dine-In">
+                    <span>🪧</span>
+                    <span>QR Meja ↗</span>
                 </a>
 
                 <a href="{{ route('customer.claim') }}" target="_blank"
@@ -251,5 +270,12 @@
     </nav>
 
     @stack('scripts')
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js').catch(() => {});
+            });
+        }
+    </script>
 </body>
 </html>

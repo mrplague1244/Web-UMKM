@@ -74,12 +74,21 @@ Route::prefix('seller')->middleware('auth')->group(function () {
     Route::get('/analytics', [AnalyticsController::class, 'index'])->name('seller.analytics');
     Route::post('/analytics/waste', [AnalyticsController::class, 'storeWaste'])->name('seller.analytics.waste');
     Route::delete('/analytics/waste/{id}', [AnalyticsController::class, 'destroyWaste'])->name('seller.analytics.waste.destroy');
+
+    // 6. Cetak QR Meja Dine-in
+    Route::get('/table-qr', [CustomerPortalController::class, 'tableQrView'])->name('seller.table_qr');
 });
+
+// ==========================================
+// MENU DIGITAL PUBLIK (QR MEJA & DINE-IN)
+// ==========================================
+Route::get('/menu', [CustomerPortalController::class, 'menuView'])->name('menu');
 
 // ==========================================
 // PORTAL PELANGGAN (KLAIM POIN & LOYALITAS)
 // ==========================================
 Route::prefix('customer')->group(function () {
+    Route::get('/menu', [CustomerPortalController::class, 'menuView'])->name('customer.menu');
     Route::get('/claim', [CustomerPortalController::class, 'claimView'])->name('customer.claim');
     Route::post('/claim', [CustomerPortalController::class, 'processClaim'])->name('customer.claim.process');
     Route::get('/loyalty/{phone}', [CustomerPortalController::class, 'loyaltyView'])->name('customer.loyalty');

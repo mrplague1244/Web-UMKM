@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <defs>
+    <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#d97706;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#78350f;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="128" fill="url(#grad)"/>
+  <!-- Boba / Coffee Cup Illustration -->
+  <path d="M160 140 L180 400 Q185 430 256 430 Q327 430 332 400 L352 140 Z" fill="#ffffff" opacity="0.95"/>
+  <ellipse cx="256" cy="140" rx="96" ry="24" fill="#fef3c7"/>
+  <rect x="140" y="132" width="232" height="16" rx="8" fill="#f59e0b"/>
+  <!-- Straw -->
+  <path d="M280 60 L310 60 L270 200 L250 200 Z" fill="#ef4444"/>
+  <!-- Pearls / Boba -->
+  <circle cx="220" cy="370" r="14" fill="#451a03"/>
+  <circle cx="260" cy="380" r="14" fill="#451a03"/>
+  <circle cx="295" cy="365" r="14" fill="#451a03"/>
+  <circle cx="240" cy="345" r="13" fill="#451a03"/>
+  <circle cx="275" cy="340" r="13" fill="#451a03"/>
+</svg>
